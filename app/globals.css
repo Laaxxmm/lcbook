@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — lifted from live learncrew.org CSS (spec §16). Tailwind maps the
+   same values under the `lc-*` color keys; these vars back raw CSS / PDF / email. */
+:root {
+  --lc-green-900: #0a2c22; /* announcement bar */
+  --lc-green-800: #0e3b2e; /* primary — headings, dark panels, brand */
+  --lc-green-700: #16543f; /* gradient partner */
+  --lc-green-400: #4a554e; /* nav links, secondary text */
+  --lc-gold: #e8a33d; /* CTA fill, emphasis */
+  --lc-on-gold: #3a2a08; /* text on gold — NEVER white (WCAG) */
+  --lc-cream: #faf7f2; /* page background, text on dark */
+  --lc-border: #e6e0d5; /* hairline */
+  /* --lc-font is injected by next/font (Plus Jakarta Sans, variable). */
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    font-family: var(--lc-font), system-ui, -apple-system, sans-serif;
+    /* Rupee ₹ (U+20B9) ships in the latin-ext subset — see app/layout.tsx. */
+    font-feature-settings: "kern";
+  }
+}
