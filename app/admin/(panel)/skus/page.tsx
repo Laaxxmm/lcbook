@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatRupees } from "@/lib/money";
 import { PageHeader, Card, TableWrap, Th, Td } from "@/components/admin/ui";
@@ -10,7 +11,18 @@ import { createSku } from "@/app/admin/(panel)/actions";
 export const dynamic = "force-dynamic";
 
 export default async function SkusPage() {
-  const skus = await prisma.sku.findMany({ orderBy: { code: "asc" } });
+  const [skus, podPending] = await Promise.all([
+    prisma.sku.findMany({ orderBy: { code: "asc" } }),
+    // LIVE print backlog per SKU = units of orders actually awaiting/in printing (summed by qty),
+    // matching the Print queue page + dashboard. The stored Sku.printQueueCount only ever
+    // increments (§7), so it lingers after an order ships — don't display it.
+    prisma.order.groupBy({
+      by: ["skuCode"],
+      where: { status: { in: [OrderStatus.PRINT_QUEUED, OrderStatus.PRINT_STARTED] } },
+      _sum: { qty: true },
+    }),
+  ]);
+  const liveQueue = new Map(podPending.map((g) => [g.skuCode, g._sum.qty ?? 0]));
 
   return (
     <div>
@@ -39,7 +51,7 @@ export default async function SkusPage() {
               <Td className="text-right">{s.weightGrams} g</Td>
               <Td className="text-right">{s.bookCount}</Td>
               <Td className="text-right font-semibold">{s.stockQty}</Td>
-              <Td className="text-right">{s.printQueueCount}</Td>
+              <Td className="text-right">{liveQueue.get(s.code) ?? 0}</Td>
               <Td>{s.active ? "Yes" : <span className="text-red-700">No</span>}</Td>
               <Td>
                 <Link href={`/admin/skus/${s.code}`} className="font-semibold text-lc-green-700 underline underline-offset-2">
