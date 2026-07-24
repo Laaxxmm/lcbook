@@ -22,6 +22,8 @@ const buttonVariants = cva(
         default: "px-5 py-3",
         sm: "rounded-[10px] px-[13px] py-[9px] text-[14.5px] font-semibold",
         lg: "px-6 py-3.5 text-base",
+        // Prominent sticky-bar CTA (§16 item 5) — taller, bolder.
+        xl: "px-7 py-4 text-[17px] font-extrabold",
       },
     },
     defaultVariants: { variant: "primary", size: "default" },

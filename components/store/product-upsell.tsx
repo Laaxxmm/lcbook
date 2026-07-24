@@ -1,3 +1,4 @@
+import { ArrowRight, BookText, Play, type LucideIcon } from "lucide-react";
 import type { SkuCode } from "@/lib/catalogue";
 import { EBOOK_URL, COURSE_URL, elearningUtm } from "@/config/elearning";
 import { DIGITAL } from "@/app/_lib/digital";
@@ -11,19 +12,37 @@ import { formatRupees } from "@/lib/money";
 // Course includes the ebook + mocks; buying the printed set grants NO digital access; both
 // digital products are non-refundable — all stated before the outbound click.
 
-function OutboundRow({ title, note, href, cta }: { title: string; note: string; href: string; cta: string }) {
+function OutboundRow({
+  title,
+  note,
+  href,
+  cta,
+  Icon,
+}: {
+  title: string;
+  note: string;
+  href: string;
+  cta: string;
+  Icon: LucideIcon;
+}) {
   return (
-    <div className="border-t border-lc-border py-3 first:border-t-0">
-      <div className="font-semibold text-lc-green-800">{title}</div>
-      <div className="mt-0.5 text-[13px] text-lc-green-400">{note}</div>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-lc-green-700 underline underline-offset-4"
-      >
-        {cta} &rarr;
-      </a>
+    <div className="flex gap-3 border-t border-lc-border py-3 first:border-t-0">
+      <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(14,59,46,0.06)] text-lc-green-700">
+        <Icon className="h-[18px] w-[18px]" aria-hidden />
+      </span>
+      <div className="min-w-0">
+        <div className="font-semibold text-lc-green-800">{title}</div>
+        <div className="mt-0.5 text-[13px] text-lc-green-400">{note}</div>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group mt-2 inline-flex items-center gap-1 text-sm font-bold text-lc-green-700 underline underline-offset-4"
+        >
+          {cta}
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+        </a>
+      </div>
     </div>
   );
 }
@@ -49,6 +68,7 @@ export function ProductUpsell({ skuCode }: { skuCode: SkuCode }) {
       <div className="mt-3 rounded-[12px] border border-lc-border bg-white px-4 py-1">
         {ebookHref && (
           <OutboundRow
+            Icon={BookText}
             title={`${d.ebookLabel} — ${formatRupees(d.ebookPaise)}`}
             note='1-year access. Opens as a "course" on WiseApp — this is the eBook, not a wrong link.'
             href={ebookHref + utm}
@@ -57,6 +77,7 @@ export function ProductUpsell({ skuCode }: { skuCode: SkuCode }) {
         )}
         {courseHref ? (
           <OutboundRow
+            Icon={Play}
             title={`Recorded course — ${formatRupees(d.coursePaise)}`}
             note="Includes the eBook and mock tests. 1-year access."
             href={courseHref + utm}

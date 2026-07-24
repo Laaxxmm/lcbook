@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MapPin, MessageCircle, Truck, Check } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { availableStock } from "@/lib/inventory";
 import type { SkuCode } from "@/lib/catalogue";
@@ -45,7 +46,8 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
   const sku = await getSku(code);
   if (!sku) notFound();
 
-  const inStock = (await availableStock(prisma, sku.code)) > 0;
+  const qty = await availableStock(prisma, sku.code);
+  const inStock = qty > 0;
   const cancellationLine = inStock
     ? "Cancel any time before dispatch — refunded minus payment-gateway charges."
     : "Cancel until printing starts — refunded minus gateway charges; not cancellable once printing begins.";
@@ -66,14 +68,14 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
           <Price paise={sku.pricePaise} />
         </div>
 
-        {/* 3. Stock state + delivery window */}
+        {/* 3. Stock state + delivery window — prominent, quantity-driven */}
         <div className="mt-3">
-          <StockBadge inStock={inStock} />
+          <StockBadge qty={qty} size="lg" />
         </div>
 
         {/* 4. Buy button (inline; sticky bar below on mobile) */}
         <div className="mt-5 hidden sm:block">
-          <Button asChild size="lg">
+          <Button asChild size="xl">
             <Link href={`/${sku.code}/checkout`}>Buy this set</Link>
           </Button>
         </div>
@@ -86,13 +88,14 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
           <h2 id="whats-inside" className="text-[15px] font-bold text-lc-green-800">
             What&apos;s inside · {sku.bookCount} books
           </h2>
-          <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <ul className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
             {sku.titles.map((t) => (
               <li
                 key={t}
-                className="rounded-[10px] border border-lc-border bg-white px-3 py-2 text-[14px] text-lc-green-800"
+                className="flex items-start gap-2.5 rounded-[10px] border border-lc-border bg-white px-4 py-3 text-[14px] leading-snug text-lc-green-800 transition-colors hover:border-[rgba(232,163,61,0.5)]"
               >
-                {t}
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-lc-gold" aria-hidden />
+                <span>{t}</span>
               </li>
             ))}
           </ul>
@@ -103,27 +106,41 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
         <ProductUpsell skuCode={sku.code as SkuCode} />
 
         {/* 8. Trust strip */}
-        <div className="mt-10 flex flex-wrap gap-x-5 gap-y-2 border-t border-lc-border pt-5 text-[13px] text-lc-green-400">
-          <span>Dispatched from Bengaluru</span>
-          <a href={WHATSAPP} target="_blank" rel="noopener noreferrer" className="font-semibold text-lc-green-700 underline underline-offset-4">
+        <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-lc-border pt-5 text-[13px] text-lc-green-400">
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="h-4 w-4 shrink-0 text-lc-green-700" aria-hidden />
+            Dispatched from Bengaluru
+          </span>
+          <a
+            href={WHATSAPP}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 font-semibold text-lc-green-700 hover:underline underline-offset-4"
+          >
+            <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
             WhatsApp us
           </a>
-          <Link href="/track" className="font-semibold text-lc-green-700 underline underline-offset-4">
+          <Link
+            href="/track"
+            className="inline-flex items-center gap-1.5 font-semibold text-lc-green-700 hover:underline underline-offset-4"
+          >
+            <Truck className="h-4 w-4 shrink-0" aria-hidden />
             Track your order
           </Link>
         </div>
       </div>
 
-      {/* Sticky thumb-reachable buy button on mobile (§15 item 4). */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lc-border bg-[rgba(250,247,242,0.95)] [backdrop-filter:blur(8px)] sm:hidden">
-        <div className="mx-auto flex max-w-container items-center justify-between gap-4 px-6 py-3">
-          <div className="text-sm">
-            <div className="font-extrabold text-lc-green-800">
+      {/* Sticky thumb-reachable buy bar on mobile (§16 item 5) — taller, near-full-width
+          gold CTA, safe-area padding. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lc-border bg-[rgba(250,247,242,0.95)] [backdrop-filter:blur(8px)] [box-shadow:0_-6px_20px_rgba(14,59,46,0.08)] sm:hidden">
+        <div className="mx-auto flex max-w-container items-center gap-4 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="shrink-0 leading-tight">
+            <div className="text-[19px] font-extrabold tracking-tight text-lc-green-800">
               ₹{(sku.pricePaise / 100).toLocaleString("en-IN")}
             </div>
-            <div className="text-[12px] text-lc-green-400">shipping included</div>
+            <div className="text-[11px] text-lc-green-400">shipping included</div>
           </div>
-          <Button asChild>
+          <Button asChild size="xl" className="flex-1">
             <Link href={`/${sku.code}/checkout`}>Buy this set</Link>
           </Button>
         </div>

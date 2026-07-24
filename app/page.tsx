@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { Container } from "@/components/ui/container";
 import { Price } from "@/components/ui/price";
+import { stockStatus, stockTone } from "@/components/ui/stock-badge";
 import { examBadge } from "@/app/_lib/sku-view";
 
 // Catalogue home (§15). SSR so live prices/availability show and this indexed URL keeps its
@@ -31,28 +33,47 @@ export default async function Home() {
       </header>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {skus.map((sku) => (
-          <Link
-            key={sku.code}
-            href={`/${sku.code}`}
-            className="group flex flex-col rounded-[14px] border border-lc-border bg-white p-5 transition hover:shadow-[0_8px_24px_rgba(14,59,46,0.08)]"
-          >
-            <span className="inline-flex w-fit rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
-              {examBadge(sku.code)}
-            </span>
-            <h2 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h2>
-            <p className="mt-1 text-[13px] text-lc-green-400">
-              {sku.bookCount} books · {sku.titles.slice(0, 4).join(", ")}
-              {sku.titles.length > 4 ? "…" : ""}
-            </p>
-            <div className="mt-4 flex items-end justify-between">
-              <Price paise={sku.pricePaise} />
-              <span className="text-sm font-bold text-lc-green-700 group-hover:underline">
-                View set &rarr;
-              </span>
-            </div>
-          </Link>
-        ))}
+        {skus.map((sku) => {
+          const stock = stockStatus(sku.stockQty);
+          const StockIcon = stock.Icon;
+          return (
+            <Link
+              key={sku.code}
+              href={`/${sku.code}`}
+              className="group relative flex flex-col overflow-hidden rounded-[14px] border border-lc-border bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(232,163,61,0.5)] hover:shadow-[0_12px_28px_rgba(14,59,46,0.1)]"
+            >
+              {/* Gold hairline that wipes in on hover — restrained accent. */}
+              <span className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-lc-gold transition-transform duration-300 group-hover:scale-x-100" />
+              <div className="flex items-start justify-between gap-2">
+                <span className="inline-flex w-fit rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
+                  {examBadge(sku.code)}
+                </span>
+                {/* Edge ribbon — copy driven only by real stockQty. */}
+                <span
+                  className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-bold ${stockTone[stock.tone]}`}
+                >
+                  <StockIcon className="h-3 w-3 shrink-0" aria-hidden />
+                  {stock.short}
+                </span>
+              </div>
+              <h2 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h2>
+              <p className="mt-1 flex items-start gap-1.5 text-[13px] text-lc-green-400">
+                <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span>
+                  {sku.bookCount} books · {sku.titles.slice(0, 4).join(", ")}
+                  {sku.titles.length > 4 ? "…" : ""}
+                </span>
+              </p>
+              <div className="mt-4 flex items-end justify-between">
+                <Price paise={sku.pricePaise} />
+                <span className="inline-flex items-center gap-1 text-sm font-bold text-lc-green-700">
+                  View set
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
+                </span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {skus.length === 0 && (

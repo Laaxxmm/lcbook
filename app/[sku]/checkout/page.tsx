@@ -26,7 +26,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sku: 
     if (!uid) redirect(`/login?next=${encodeURIComponent(`/${code}/checkout`)}`);
   }
 
-  const inStock = (await availableStock(prisma, sku.code)) > 0;
+  const qty = await availableStock(prisma, sku.code);
 
   return (
     <Container className="py-8 sm:py-12">
@@ -38,7 +38,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sku: 
         <p className="mt-1 text-[15px] text-lc-green-400">{sku.name}</p>
 
         <div className="mt-3">
-          <StockBadge inStock={inStock} />
+          <StockBadge qty={qty} />
         </div>
         <p className="mt-3 text-[13px] text-lc-green-400">
           One price, shipping included. Cancellations are refunded minus payment-gateway charges.

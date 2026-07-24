@@ -1,8 +1,50 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CONSENT_TEXT } from "@/app/_lib/consent";
+
+// All Indian States + Union Territories — native <select> so it stays mobile-friendly
+// with zero extra deps. Field name/value shape is unchanged (`state`).
+const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+];
 
 // Guest checkout address form (§8). Mobile: single column, numeric keypad on pincode + phone,
 // sticky thumb-reachable buy button. Marketing consent DEFAULT UNTICKED (DPDP). On submit it
@@ -137,7 +179,7 @@ export function CheckoutForm({ skuCode, setName, amountPaise }: CheckoutFormProp
   }
 
   return (
-    <form onSubmit={onSubmit} className="pb-28">
+    <form onSubmit={onSubmit} className="pb-32">
       <div className="grid grid-cols-1 gap-4">
         <div>
           <label className={labelCls} htmlFor="name">Full name</label>
@@ -175,7 +217,29 @@ export function CheckoutForm({ skuCode, setName, amountPaise }: CheckoutFormProp
           </div>
           <div>
             <label className={labelCls} htmlFor="state">State</label>
-            <input id="state" name="state" required autoComplete="address-level1" className={inputCls} />
+            <div className="relative">
+              <select
+                id="state"
+                name="state"
+                required
+                autoComplete="address-level1"
+                defaultValue=""
+                className={`${inputCls} appearance-none pr-9`}
+              >
+                <option value="" disabled>
+                  Select state
+                </option>
+                {INDIAN_STATES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-lc-green-400"
+                aria-hidden
+              />
+            </div>
           </div>
         </div>
         <div>
@@ -205,14 +269,14 @@ export function CheckoutForm({ skuCode, setName, amountPaise }: CheckoutFormProp
         </p>
       )}
 
-      {/* Sticky thumb-reachable buy button (§8). */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lc-border bg-[rgba(250,247,242,0.95)] [backdrop-filter:blur(8px)]">
-        <div className="mx-auto flex max-w-container items-center justify-between gap-4 px-6 py-3">
-          <div className="text-sm">
-            <div className="font-extrabold text-lc-green-800">{rupees(amountPaise)}</div>
-            <div className="text-[12px] text-lc-green-400">shipping included</div>
+      {/* Sticky thumb-reachable pay bar (§8) — taller, near-full-width gold CTA, safe-area. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lc-border bg-[rgba(250,247,242,0.95)] [backdrop-filter:blur(8px)] [box-shadow:0_-6px_20px_rgba(14,59,46,0.08)]">
+        <div className="mx-auto flex max-w-container items-center gap-4 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="shrink-0 leading-tight">
+            <div className="text-[17px] font-extrabold tracking-tight text-lc-green-800">{rupees(amountPaise)}</div>
+            <div className="text-[11px] text-lc-green-400">shipping included</div>
           </div>
-          <Button type="submit" disabled={busy} className="min-w-[160px]">
+          <Button type="submit" disabled={busy} size="xl" className="flex-1">
             {busy ? "Opening payment…" : "Pay securely"}
           </Button>
         </div>
