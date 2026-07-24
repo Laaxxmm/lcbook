@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         {/* Sticky nav — backdrop blur (§16). Logo mark + non-wrapping lockup. */}
         <header className="sticky top-0 z-40 border-b border-lc-border bg-[rgba(250,247,242,0.9)] [backdrop-filter:saturate(160%)_blur(12px)]">
-          <Container className="flex h-[60px] items-center justify-between gap-2 sm:h-[72px]">
+          <Container className="flex h-[60px] items-center justify-between gap-3 sm:h-[72px] sm:gap-4">
             <Link href="/" className="flex min-w-0 shrink items-center gap-2 sm:gap-2.5">
               <BrandLogo
                 src="/logo-mark.png"
@@ -76,10 +76,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9"
               />
               <span className="flex flex-col leading-[1.02]">
-                <span className="text-[15px] font-extrabold tracking-[-0.01em] text-lc-green-800 sm:text-[17px]">
+                <span className="text-[13.5px] font-extrabold tracking-[-0.01em] text-lc-green-800 sm:text-[15px]">
                   Learn Crew
                 </span>
-                <span className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-lc-gold sm:text-[11.5px]">
+                <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-lc-gold sm:text-[10px]">
                   Publications
                 </span>
               </span>
