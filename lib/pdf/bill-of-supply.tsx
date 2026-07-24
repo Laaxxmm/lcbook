@@ -1,10 +1,10 @@
 // Bill of Supply (spec §12) — NOT a tax invoice; printed books are exempt (HSN 4901).
-// @react-pdf/renderer only (spec §1 forbids Puppeteer/Playwright/headless Chrome).
-// Rendered ENTIRELY from the order snapshot via buildInvoiceData (§5, load-bearing).
+// @react-pdf/renderer only (spec §1 forbids Puppeteer/Playwright/headless Chrome — they get
+// OOM-killed on Railway). Rendered ENTIRELY from the order snapshot via buildInvoiceData
+// (§5, load-bearing) so a past invoice never re-renders with edited catalogue values.
 // GST fields are built now but only rendered when GST_ENABLED (§12) — shipped dormant.
 //
-// ponytail: minimal-but-valid layout. The email/PDF agent enriches (logo, spacing,
-// full GST grid) — the contract is renderBillOfSupply(data) => Promise<Buffer>.
+// Contract (frozen): renderBillOfSupply(data) => Promise<Buffer>.
 import * as React from "react";
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
 import { buildInvoiceData } from "@/lib/invoice";
@@ -12,18 +12,55 @@ import { formatRupees } from "@/lib/money";
 
 export type InvoiceData = ReturnType<typeof buildInvoiceData>;
 
+// Brand colours (§16).
+const GREEN = "#0E3B2E";
+const MUTED = "#4A554E";
+const GOLD = "#E8A33D";
+const CREAM = "#FAF7F2";
+const BORDER = "#E6E0D5";
+
 const s = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, color: "#0E3B2E" },
-  h1: { fontSize: 16, fontWeight: 700, marginBottom: 2 },
-  muted: { color: "#4A554E" },
-  section: { marginTop: 16 },
-  label: { fontSize: 8, textTransform: "uppercase", color: "#4A554E", marginBottom: 2 },
-  row: { flexDirection: "row", justifyContent: "space-between" },
-  th: { flexDirection: "row", borderBottom: 1, borderColor: "#E6E0D5", paddingBottom: 4, marginBottom: 4 },
-  cell: { flex: 1 },
-  cellNum: { flex: 1, textAlign: "right" },
-  total: { marginTop: 10, paddingTop: 6, borderTop: 1, borderColor: "#E6E0D5" },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", fontWeight: 700 },
+  page: { padding: 40, fontSize: 10, color: GREEN, lineHeight: 1.4 },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    backgroundColor: GREEN,
+    color: CREAM,
+    padding: "14 18",
+    borderRadius: 8,
+  },
+  brand: { fontSize: 18, fontWeight: 700, color: CREAM },
+  brandSub: { fontSize: 9, color: GOLD, marginTop: 2 },
+  docTitle: { fontSize: 14, fontWeight: 700, color: CREAM, textAlign: "right" },
+  docNote: { fontSize: 7.5, color: CREAM, textAlign: "right", marginTop: 2, maxWidth: 190 },
+  section: { marginTop: 18 },
+  cols: { flexDirection: "row", justifyContent: "space-between" },
+  label: { fontSize: 8, textTransform: "uppercase", color: MUTED, marginBottom: 3, letterSpacing: 0.5 },
+  muted: { color: MUTED },
+  th: {
+    flexDirection: "row",
+    borderBottom: 1,
+    borderColor: GREEN,
+    paddingBottom: 5,
+    marginBottom: 6,
+    marginTop: 4,
+    fontSize: 8,
+    textTransform: "uppercase",
+    color: MUTED,
+  },
+  cItem: { flex: 1 },
+  cHsn: { width: 44 },
+  cQty: { width: 30, textAlign: "right" },
+  cUnit: { width: 70, textAlign: "right" },
+  cAmt: { width: 80, textAlign: "right" },
+  itemRow: { flexDirection: "row", marginBottom: 6, alignItems: "flex-start" },
+  totals: { marginTop: 12, paddingTop: 8, borderTop: 1, borderColor: BORDER },
+  totRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 3 },
+  totKey: { color: MUTED, width: 150, textAlign: "right", marginRight: 12 },
+  totVal: { width: 80, textAlign: "right" },
+  grand: { fontWeight: 700, fontSize: 11, color: GREEN },
+  footer: { marginTop: 26, paddingTop: 10, borderTop: 1, borderColor: BORDER, fontSize: 8, color: MUTED },
 });
 
 function BillOfSupply({ data }: { data: InvoiceData }) {
@@ -31,11 +68,21 @@ function BillOfSupply({ data }: { data: InvoiceData }) {
   return (
     <Document title={`Bill of Supply ${invoiceNumber ?? ""}`}>
       <Page size="A4" style={s.page}>
-        <Text style={s.h1}>Bill of Supply</Text>
-        <Text style={s.muted}>Not a tax invoice · printed books exempt (HSN 4901)</Text>
+        {/* Brand header — text logo (§12: text logo fine if no asset). */}
+        <View style={s.header}>
+          <View>
+            <Text style={s.brand}>Learn Crew</Text>
+            <Text style={s.brandSub}>PUBLICATIONS</Text>
+          </View>
+          <View>
+            <Text style={s.docTitle}>Bill of Supply</Text>
+            <Text style={s.docNote}>Not a tax invoice · printed books are exempt (HSN 4901)</Text>
+          </View>
+        </View>
 
-        <View style={[s.section, s.row]}>
-          <View style={{ maxWidth: 260 }}>
+        {/* Seller (§2) + invoice meta. */}
+        <View style={[s.section, s.cols]}>
+          <View style={{ maxWidth: 280 }}>
             <Text style={s.label}>Seller</Text>
             <Text>{seller.name}</Text>
             {seller.address.map((line) => (
@@ -48,14 +95,21 @@ function BillOfSupply({ data }: { data: InvoiceData }) {
             </Text>
             {gst && seller.gstin ? <Text style={s.muted}>GSTIN: {seller.gstin}</Text> : null}
           </View>
-          <View style={{ textAlign: "right" }}>
-            <Text style={s.label}>Invoice</Text>
+          <View style={{ maxWidth: 200 }}>
+            <Text style={s.label}>Invoice no.</Text>
             <Text>{invoiceNumber ?? "—"}</Text>
-            <Text style={s.muted}>{new Date(date).toLocaleDateString("en-IN")}</Text>
-            {gst ? <Text style={s.muted}>Place of supply: {gst.placeOfSupply}</Text> : null}
+            <Text style={[s.label, { marginTop: 8 }]}>Date</Text>
+            <Text style={s.muted}>{new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</Text>
+            {gst ? (
+              <>
+                <Text style={[s.label, { marginTop: 8 }]}>Place of supply</Text>
+                <Text style={s.muted}>{gst.placeOfSupply}</Text>
+              </>
+            ) : null}
           </View>
         </View>
 
+        {/* Buyer. */}
         <View style={s.section}>
           <Text style={s.label}>Bill to</Text>
           <Text>{buyer.name}</Text>
@@ -67,49 +121,63 @@ function BillOfSupply({ data }: { data: InvoiceData }) {
           {gst && gst.buyerGstin ? <Text style={s.muted}>GSTIN: {gst.buyerGstin}</Text> : null}
         </View>
 
+        {/* Line items — from the order snapshot (§5), HSN 4901, qty, amount. */}
         <View style={s.section}>
           <View style={s.th}>
-            <Text style={s.cell}>Item</Text>
-            <Text style={{ width: 40 }}>HSN</Text>
-            <Text style={{ width: 30, textAlign: "right" }}>Qty</Text>
-            <Text style={s.cellNum}>Amount</Text>
+            <Text style={s.cItem}>Item</Text>
+            <Text style={s.cHsn}>HSN</Text>
+            <Text style={s.cQty}>Qty</Text>
+            <Text style={s.cUnit}>Unit price</Text>
+            <Text style={s.cAmt}>Amount</Text>
           </View>
           {lineItems.map((li, i) => (
-            <View key={i} style={{ flexDirection: "row", marginBottom: 4 }}>
-              <View style={s.cell}>
+            <View key={i} style={s.itemRow}>
+              <View style={s.cItem}>
                 <Text>
                   {li.description} ({li.bookCount} books)
                 </Text>
-                <Text style={s.muted}>{li.titles.join(", ")}</Text>
+                {li.titles.length ? <Text style={s.muted}>{li.titles.join(", ")}</Text> : null}
               </View>
-              <Text style={{ width: 40 }}>{li.hsn}</Text>
-              <Text style={{ width: 30, textAlign: "right" }}>{li.qty}</Text>
-              <Text style={s.cellNum}>{formatRupees(li.amountPaise)}</Text>
+              <Text style={s.cHsn}>{li.hsn}</Text>
+              <Text style={s.cQty}>{li.qty}</Text>
+              <Text style={s.cUnit}>{formatRupees(li.unitPricePaise)}</Text>
+              <Text style={s.cAmt}>{formatRupees(li.amountPaise)}</Text>
             </View>
           ))}
 
-          <View style={s.total}>
+          <View style={s.totals}>
             {gst ? (
               <>
-                <View style={s.row}>
-                  <Text style={s.muted}>Taxable value</Text>
-                  <Text>{formatRupees(gst.taxableValuePaise)}</Text>
+                <View style={s.totRow}>
+                  <Text style={s.totKey}>Taxable value</Text>
+                  <Text style={s.totVal}>{formatRupees(gst.taxableValuePaise)}</Text>
                 </View>
-                <View style={s.row}>
-                  <Text style={s.muted}>CGST / SGST / IGST</Text>
-                  <Text>
-                    {formatRupees(gst.cgstPaise)} / {formatRupees(gst.sgstPaise)} /{" "}
-                    {formatRupees(gst.igstPaise)}
-                  </Text>
+                <View style={s.totRow}>
+                  <Text style={s.totKey}>CGST</Text>
+                  <Text style={s.totVal}>{formatRupees(gst.cgstPaise)}</Text>
+                </View>
+                <View style={s.totRow}>
+                  <Text style={s.totKey}>SGST</Text>
+                  <Text style={s.totVal}>{formatRupees(gst.sgstPaise)}</Text>
+                </View>
+                <View style={s.totRow}>
+                  <Text style={s.totKey}>IGST</Text>
+                  <Text style={s.totVal}>{formatRupees(gst.igstPaise)}</Text>
                 </View>
               </>
             ) : null}
-            <View style={s.totalRow}>
-              <Text>Total (shipping included)</Text>
-              <Text>{formatRupees(totalPaise)}</Text>
+            <View style={s.totRow}>
+              <Text style={[s.totKey, s.grand]}>Total (shipping included)</Text>
+              <Text style={[s.totVal, s.grand]}>{formatRupees(totalPaise)}</Text>
             </View>
           </View>
         </View>
+
+        <Text style={s.footer}>
+          Bill of Supply issued under the composition/exempt scheme — this is not a tax invoice.
+          Printed books are exempt from GST (HSN 4901). Prices are inclusive of shipping.
+          {"\n"}This is a computer-generated document and needs no signature.
+        </Text>
       </Page>
     </Document>
   );

@@ -26,6 +26,8 @@ const schema = z.object({
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().default("orders@learncrew.org"),
   EMAIL_REPLY_TO: z.string().default("support@learncrew.org"),
+  // Inbox that also receives cancellation-requested notices (§11 tpl 5). Defaults to support@.
+  ADMIN_EMAIL: z.string().default("support@learncrew.org"),
 
   // Google Sheet sync — Apps Script web app (§10). SHEETS_SECRET is the shared token.
   SHEETS_WEBHOOK_URL: z.string().url(),
