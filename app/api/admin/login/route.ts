@@ -31,6 +31,11 @@ export async function POST(req: Request): Promise<Response> {
       });
       const token = await issueMagicLink(user.id);
       const url = `${process.env.APP_URL ?? ""}/api/admin/verify?token=${encodeURIComponent(token)}`;
+      // Dev-only: the Resend email can't send without a real key locally, so print the
+      // single-use sign-in link to the server log. NEVER logs in production.
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`\n[admin/login] DEV sign-in link:\n${url}\n`);
+      }
       await sendAdminMail(
         user.email,
         "Sign in to Learn Crew Publications admin",
