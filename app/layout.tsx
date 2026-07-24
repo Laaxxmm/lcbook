@@ -50,7 +50,7 @@ const POLICY_LINKS = [
 ];
 
 const navLink =
-  "inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[14px] font-semibold text-lc-green-400 transition-colors hover:bg-[rgba(14,59,46,0.06)] hover:text-lc-green-800 sm:px-[13px] sm:text-[14.5px]";
+  "inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] font-semibold text-lc-green-400 transition-colors hover:bg-[rgba(14,59,46,0.06)] hover:text-lc-green-800 sm:px-[13px] sm:text-[13.5px]";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -73,13 +73,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <BrandLogo
                 src="/logo-mark.png"
                 alt="Learn Crew Publications"
-                className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9"
+                className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-1 ring-1 ring-lc-border sm:h-10 sm:w-10"
               />
-              <span className="flex flex-col leading-[1.02]">
-                <span className="text-[13.5px] font-extrabold tracking-[-0.01em] text-lc-green-800 sm:text-[15px]">
+              <span className="flex flex-col leading-[1.05]">
+                <span className="text-[15px] font-extrabold tracking-[-0.01em] text-lc-green-800 sm:text-[16.5px]">
                   Learn Crew
                 </span>
-                <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-lc-gold sm:text-[10px]">
+                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-lc-gold sm:text-[10px]">
                   Publications
                 </span>
               </span>
