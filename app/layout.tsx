@@ -75,8 +75,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 alt="Learn Crew Publications"
                 className="h-9 w-9 shrink-0 rounded-full bg-white object-contain p-1 ring-1 ring-lc-border sm:h-10 sm:w-10"
               />
-              <span className="flex flex-col leading-[1.05]">
-                <span className="text-[15px] font-extrabold tracking-[-0.01em] text-lc-green-800 sm:text-[16.5px]">
+              <span className="flex flex-col whitespace-nowrap leading-[1.05]">
+                <span className="text-[13.5px] font-extrabold tracking-[-0.01em] text-lc-green-800 sm:text-[15px]">
                   Learn Crew
                 </span>
                 <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-lc-gold sm:text-[10px]">
