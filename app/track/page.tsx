@@ -6,7 +6,7 @@ import { verifyMagicLink } from "@/lib/auth";
 import { Container } from "@/components/ui/container";
 import { OrderDetail } from "@/components/store/order-detail";
 import { TrackLookup } from "@/components/store/track-lookup";
-import { SESSION_COOKIE, verifyOrderToken, verifySession } from "@/app/_lib/tokens";
+import { SESSION_COOKIE, signOrderToken, verifyOrderToken, verifySession } from "@/app/_lib/tokens";
 
 // Order tracking (§8). SECURITY: a bare order id NEVER reveals an order. Identity must come from
 // one of three proofs, verified server-side before anything is shown:
@@ -42,7 +42,7 @@ export default async function TrackPage({
     const order = id ? await prisma.order.findUnique({ where: { id } }) : null;
     return (
       <Shell>
-        {order ? <OrderDetail order={order} /> : <Invalid />}
+        {order ? <OrderDetail order={order} cancelToken={token} /> : <Invalid />}
       </Shell>
     );
   }
@@ -103,7 +103,8 @@ function OrderList({ orders }: { orders: Awaited<ReturnType<typeof ordersForUser
   return (
     <div>
       {orders.map((o) => (
-        <OrderDetail key={o.id} order={o} />
+        // Mint a fresh durable token per order so each card can file its own cancellation request.
+        <OrderDetail key={o.id} order={o} cancelToken={signOrderToken(o.id)} />
       ))}
     </div>
   );

@@ -1,0 +1,12 @@
+# Railway deploy config (§17, §19). Nixpacks builds with `npm run build` (postinstall runs
+# `prisma generate`). preDeployCommand applies pending migrations against the prod DATABASE_URL
+# BEFORE the new release starts serving — additive only, never a destructive reset.
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+
+[deploy]
+preDeployCommand = "npx prisma migrate deploy"
+startCommand = "npm run start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

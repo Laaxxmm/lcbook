@@ -110,8 +110,12 @@ model Order {
   printStartedAt DateTime?
 
   // cancellation / refund
+  // A customer cancel is a REQUEST, not a status change (§6): cancelRequestedAt+cancelReason are
+  // set while the order stays in fulfilment; cancelReviewedAt marks that admin approved/rejected
+  // it, so a pending request is (cancelRequestedAt != null AND cancelReviewedAt == null).
   cancelRequestedAt        DateTime?
   cancelReason             String?
+  cancelReviewedAt         DateTime?
   refundId                 String?       @unique
   refundAmountPaise        Int?
   gatewayFeeRetainedPaise  Int?

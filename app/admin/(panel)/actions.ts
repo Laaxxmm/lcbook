@@ -8,6 +8,10 @@ import { prisma } from "@/lib/db";
 import { transitionOrder } from "@/lib/orders/state-machine";
 import { InvalidTransitionError } from "@/lib/orders/status";
 import { initiateRefund, DoubleRefundError } from "@/lib/refunds";
+import {
+  approveCancellation,
+  rejectCancellation as rejectCancellationRequest,
+} from "@/lib/orders/cancellation";
 import { updateSku } from "@/lib/sku";
 import { runSheetSyncJob, drainSheetSyncJobs } from "@/lib/sheet-sync";
 import { enqueueJob } from "@/lib/jobs";
@@ -108,7 +112,9 @@ export async function dispatchOrder(_prev: ActionState, fd: FormData): Promise<A
   }
 }
 
-// ── Cancellation inbox: approve → refund (double-refund-guarded in lib) (§14). ──
+// ── Refund an ALREADY-cancelled order (order-detail "Initiate refund" button, for an admin-direct
+// CANCELLED_BY_ADMIN). Double-refund-guarded in lib/refunds. The cancellation INBOX uses the
+// approve action below, not this. ──
 export async function refundOrder(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const g = await guard();
   if (g) return g;
@@ -127,8 +133,28 @@ export async function refundOrder(_prev: ActionState, fd: FormData): Promise<Act
   }
 }
 
-// ── Cancellation inbox: reject → notify customer (§14). No state change: the frozen machine
-// has no path out of CANCELLED_BY_USER except REFUND_INITIATED, so a decline is notify-only. ──
+// ── Cancellation inbox: APPROVE a pending customer request (§6/§14) → transition to
+// CANCELLED_BY_USER + initiate the guarded refund, in the shared row-locked lib. Fails cleanly if
+// the order has since shipped/started printing (nothing is refunded on a shipped order). ──
+export async function approveCancellationRequest(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const g = await guard();
+  if (g) return g;
+
+  const orderId = str(fd, "orderId");
+  if (!orderId) return { error: "Bad request." };
+
+  try {
+    const order = await approveCancellation(orderId, Actor.ADMIN, "cancellation request approved");
+    await sendRefundInitiatedEmail(order);
+    revalidateOrder(orderId);
+    return { ok: true, msg: "Approved — refund initiated, customer notified." };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// ── Cancellation inbox: REJECT a pending customer request (§6/§14) → mark it reviewed (order stays
+// in fulfilment) via the shared lib, then notify the customer. ──
 export async function rejectCancellation(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const g = await guard();
   if (g) return g;
@@ -138,8 +164,7 @@ export async function rejectCancellation(_prev: ActionState, fd: FormData): Prom
   if (!orderId) return { error: "Bad request." };
 
   try {
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) return { error: "Order not found." };
+    const order = await rejectCancellationRequest(orderId, note || undefined, Actor.ADMIN);
     await sendAdminMail(
       order.customerEmail,
       `About your cancellation request — ${order.id}`,

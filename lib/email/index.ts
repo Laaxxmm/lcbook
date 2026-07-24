@@ -14,6 +14,7 @@ import { buildInvoiceData, SELLER } from "@/lib/invoice";
 import { renderBillOfSupply } from "@/lib/pdf/bill-of-supply";
 import { formatRupees } from "@/lib/money";
 import { EBOOK_URL, COURSE_URL, elearningUtm } from "@/config/elearning";
+import { signOrderToken } from "@/lib/order-token";
 import type { SkuCode } from "@/lib/catalogue";
 
 let client: Resend | null = null;
@@ -110,10 +111,12 @@ function panel(inner: string): string {
   return `<div style="background:${C.cream};border:1px solid ${C.border};border-radius:12px;padding:16px 18px;margin:0 0 18px">${inner}</div>`;
 }
 
-// "Track my order" link. ponytail: uses the durable order-id tracking page, not a 15-min
-// magic link — a magic-link token (§8, 15-min TTL) is dead by the time a confirmation email
-// is opened. The signed magic link lives in the login email (tpl 8) where it's used at once.
-const trackUrl = (order: Order) => `${appUrl()}/track?order=${encodeURIComponent(order.id)}`;
+// "Track my order" link — a durable, signed order token (§8, ~30-day TTL) for true one-click
+// tracking. NOT a 15-min magic link (dead by the time a confirmation email is opened) and NOT a
+// bare ?order= id (which proves nothing and would force the phone lookup). The signed magic link
+// lives in the login email (tpl 8) where it's used at once.
+const trackUrl = (order: Order) =>
+  `${appUrl()}/track?token=${encodeURIComponent(signOrderToken(order.id))}`;
 
 // Delivery SLA copy (§7), driven by the fulfilment type decided at CONFIRMED.
 function slaLine(order: Order): string {

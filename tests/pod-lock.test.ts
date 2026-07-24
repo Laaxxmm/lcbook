@@ -1,5 +1,5 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
-import { transitionOrder } from "@/lib/orders/state-machine";
+import { requestCancellation, CancellationWindowClosedError } from "@/lib/orders/cancellation";
 import { prisma, resetDb, makeSku, makeOrderAt } from "./helpers";
 
 describe("§13.6 POD cancellation lock", () => {
@@ -8,7 +8,7 @@ describe("§13.6 POD cancellation lock", () => {
     await prisma.$disconnect();
   });
 
-  it("cancel attempt after PRINT_STARTED is rejected as an illegal transition", async () => {
+  it("cancel request after PRINT_STARTED is rejected with a clear window-closed message", async () => {
     await makeSku({ stockQty: 0 }); // POD path
     const order = await makeOrderAt("PRINT_STARTED", {
       fulfilmentType: "POD",
@@ -16,10 +16,11 @@ describe("§13.6 POD cancellation lock", () => {
       printStartedAt: new Date(),
     });
 
-    // The cancellation window is closed once printing begins (§6).
-    await expect(
-      transitionOrder(order.id, "CANCELLED_BY_USER", "CUSTOMER", { reason: "changed mind" }),
-    ).rejects.toThrow(/PRINT_STARTED.*CANCELLED_BY_USER|Illegal order transition/);
+    // The cancellation window is closed once printing begins (§6). A customer cancel is a request,
+    // and the request itself is refused — with a plain, customer-facing message.
+    const err = await requestCancellation(order.id, "changed mind", "CUSTOMER").catch((e) => e);
+    expect(err).toBeInstanceOf(CancellationWindowClosedError);
+    expect((err as CancellationWindowClosedError).customerMessage).toMatch(/printing|no longer be cancelled/i);
 
     // Nothing moved: still PRINT_STARTED, no cancellation recorded, no cancel event.
     const final = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
@@ -28,7 +29,7 @@ describe("§13.6 POD cancellation lock", () => {
     expect(final.cancelReason).toBeNull();
 
     const cancelEvents = await prisma.orderEvent.findMany({
-      where: { orderId: order.id, toStatus: "CANCELLED_BY_USER" },
+      where: { orderId: order.id, metadata: { path: ["event"], equals: "CANCEL_REQUESTED" } },
     });
     expect(cancelEvents).toHaveLength(0);
   });

@@ -53,6 +53,17 @@ export function isTransitionAllowed(from: OrderStatus, to: OrderStatus): boolean
   return ALLOWED_TRANSITIONS[from].includes(to);
 }
 
+// Cancellation window (§6), derived from the SAME map so there's one source of truth: an order is
+// cancellable exactly while CANCELLED_BY_USER is a legal transition from its status — i.e. IN_STOCK
+// until SHIPPED (AWB entered), POD until PRINT_STARTED (printing begins).
+export function isCancellable(status: OrderStatus): boolean {
+  return ALLOWED_TRANSITIONS[status].includes(OrderStatus.CANCELLED_BY_USER);
+}
+
+export const CANCELLABLE_STATUSES = (Object.keys(ALLOWED_TRANSITIONS) as OrderStatus[]).filter(
+  isCancellable,
+);
+
 export class InvalidTransitionError extends Error {
   constructor(
     public readonly orderId: string,

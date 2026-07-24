@@ -2,6 +2,7 @@ import Link from "next/link";
 import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatRupees } from "@/lib/money";
+import { CANCELLABLE_STATUSES } from "@/lib/orders/status";
 import { PageHeader, Card } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/admin/status-badge";
 
@@ -11,7 +12,8 @@ export default async function DashboardPage() {
   const [flagged, cancellations, printQueue, pendingSheet, recent] = await Promise.all([
     prisma.order.count({ where: { OR: [{ amountMismatchFlagged: true }, { refundStatus: "FAILED" }] } }),
     prisma.order.count({
-      where: { status: { in: [OrderStatus.CANCELLED_BY_USER, OrderStatus.CANCELLED_BY_ADMIN] }, refundId: null },
+      // Pending customer cancellation requests — matches the inbox filter (§6).
+      where: { cancelRequestedAt: { not: null }, cancelReviewedAt: null, status: { in: CANCELLABLE_STATUSES } },
     }),
     prisma.order.count({ where: { status: { in: [OrderStatus.PRINT_QUEUED, OrderStatus.PRINT_STARTED] } } }),
     prisma.sheetSyncJob.count({ where: { syncedAt: null } }),

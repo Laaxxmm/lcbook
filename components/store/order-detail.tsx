@@ -1,5 +1,7 @@
 import type { Order } from "@prisma/client";
 import { formatRupees } from "@/lib/money";
+import { isCancellable } from "@/lib/orders/status";
+import { CancelOrderForm } from "@/components/store/cancel-order-form";
 
 // Read-only order view shown on /track once identity is proven (magic link, session, or a
 // verified order-id+phone token). Plain-language status, delivery window (§7), and the amount
@@ -41,9 +43,11 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
-export function OrderDetail({ order }: { order: Order }) {
+export function OrderDetail({ order, cancelToken }: { order: Order; cancelToken?: string }) {
   const s = STATUS[order.status];
   const sla = slaLine(order);
+  const pendingCancel = order.cancelRequestedAt != null && order.cancelReviewedAt == null;
+  const canRequestCancel = !pendingCancel && isCancellable(order.status) && !!cancelToken;
 
   return (
     <div className="mt-6">
@@ -67,6 +71,14 @@ export function OrderDetail({ order }: { order: Order }) {
           )}
         </div>
       </div>
+
+      {pendingCancel && (
+        <div className="mt-4 rounded-[12px] border border-lc-border bg-[rgba(232,163,61,0.10)] p-4 text-[14px] text-lc-green-800">
+          Cancellation requested — with our team for review. If approved, your refund is the amount
+          paid minus payment gateway charges.
+        </div>
+      )}
+      {canRequestCancel && <CancelOrderForm token={cancelToken!} />}
 
       <p className="mt-4 text-[13px] text-lc-green-400">
         Shipping to {order.city}, {order.state} {order.pincode}. Questions? Reply to your

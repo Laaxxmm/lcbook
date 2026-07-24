@@ -16,6 +16,11 @@ export async function sendPrintStartedEmail(order: Order): Promise<void> {
   enqueueJob(`email:print-started:${order.id}`, () => email.sendPrintStarted(order));
 }
 
+// §11 tpl 5 — cancellation requested, to the customer AND admin. Never auto-refunds (§6).
+export async function sendCancellationRequestedEmail(order: Order): Promise<void> {
+  enqueueJob(`email:cancel-requested:${order.id}`, () => email.sendCancellationRequested(order));
+}
+
 export async function sendDispatchedEmail(order: Order): Promise<void> {
   enqueueJob(`email:dispatched:${order.id}`, () => email.sendDispatched(order));
 }
