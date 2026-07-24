@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, MessageCircle, Truck, Check } from "lucide-react";
+import { MapPin, MessageCircle, Truck, Check, Package } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { availableStock } from "@/lib/inventory";
 import type { SkuCode } from "@/lib/catalogue";
@@ -55,10 +55,16 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
   return (
     <Container className="py-8 sm:py-12">
       <div className="mx-auto max-w-xl">
-        {/* 1. Exam badge + set name */}
-        <span className="inline-flex rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
-          {examBadge(sku.code)}
-        </span>
+        {/* 1. Exam badge + format (Hardcopy) + set name */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
+            {examBadge(sku.code)}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-lc-border bg-white px-3 py-1 text-[12px] font-bold text-lc-green-700">
+            <Package className="h-3.5 w-3.5" aria-hidden />
+            Hardcopy
+          </span>
+        </div>
         <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-lc-green-800 sm:text-3xl">
           {sku.name}
         </h1>

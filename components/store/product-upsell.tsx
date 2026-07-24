@@ -56,13 +56,14 @@ export function ProductUpsell({ skuCode }: { skuCode: SkuCode }) {
   const utm = elearningUtm();
 
   return (
-    <section className="mt-8" aria-labelledby="prep-digitally">
-      <h2 id="prep-digitally" className="text-[15px] font-bold text-lc-green-800">
-        Prepare digitally too
+    <section className="mt-8" aria-labelledby="ebook">
+      <h2 id="ebook" className="flex items-center gap-2 text-[15px] font-bold text-lc-green-800">
+        <BookText className="h-4 w-4 text-lc-green-700" aria-hidden />
+        {ebookHref && courseHref ? "eBook & recorded course" : ebookHref ? "eBook" : "Recorded course"}
       </h2>
       <p className="mt-1 text-[13px] text-lc-green-400">
-        Sold separately on our learning platform. Buying the printed set doesn&apos;t include digital
-        access, and eBooks &amp; recorded courses are <strong>non-refundable</strong>.
+        The digital version, sold separately on our learning platform. Buying the <strong>Hardcopy</strong> set
+        doesn&apos;t include digital access, and eBooks &amp; recorded courses are <strong>non-refundable</strong>.
       </p>
 
       <div className="mt-3 rounded-[12px] border border-lc-border bg-white px-4 py-1">
