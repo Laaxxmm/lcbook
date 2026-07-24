@@ -3,20 +3,27 @@ import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatRupees } from "@/lib/money";
 import { CANCELLABLE_STATUSES } from "@/lib/orders/status";
+import { SHIPPING_RATE_PER_KG_PAISE } from "@/config/pricing";
 import { PageHeader, Card } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/admin/status-badge";
 
 // Admin dashboard (§14): the things that need a human — flags, cancellations, print queue,
 // failed sheet syncs — plus a recent-orders glance.
 export default async function DashboardPage() {
-  const [received, paid, pending, completed, flagged, cancellations, printQueue, pendingSheet, recent] =
+  const [received, paid, pending, shipped, completed, revenueAgg, shipWeightAgg, flagged, cancellations, printQueue, pendingSheet, recent] =
     await Promise.all([
       prisma.order.count(),
       // Paid = payment captured (money in), regardless of later fulfilment/cancellation.
       prisma.order.count({ where: { razorpayPaymentId: { not: null } } }),
       // Pending = still awaiting payment.
       prisma.order.count({ where: { status: { in: [OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING] } } }),
+      // Shipped = dispatched (AWB entered → dispatchedAt set), incl. delivered/RTO.
+      prisma.order.count({ where: { dispatchedAt: { not: null } } }),
       prisma.order.count({ where: { status: OrderStatus.DELIVERED } }),
+      // Total revenue = sum of captured order amounts (paise).
+      prisma.order.aggregate({ _sum: { amountPaise: true }, where: { razorpayPaymentId: { not: null } } }),
+      // Shipping-cost estimate basis: total dispatched weight (snapshot grams).
+      prisma.order.aggregate({ _sum: { snapshotWeightGrams: true }, where: { dispatchedAt: { not: null } } }),
       prisma.order.count({ where: { OR: [{ amountMismatchFlagged: true }, { refundStatus: "FAILED" }] } }),
       prisma.order.count({
         // Pending customer cancellation requests — matches the inbox filter (§6).
@@ -27,11 +34,21 @@ export default async function DashboardPage() {
       prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
     ]);
 
+  const revenuePaise = revenueAgg._sum.amountPaise ?? 0;
+  const shippedGrams = shipWeightAgg._sum.snapshotWeightGrams ?? 0;
+  const shippingEstPaise = Math.round((shippedGrams / 1000) * SHIPPING_RATE_PER_KG_PAISE);
+
   const kpis = [
     { href: "/admin/orders", label: "Orders received", value: received },
     { href: "/admin/orders?status=PAID", label: "Paid", value: paid },
     { href: "/admin/orders?status=PAYMENT_PENDING", label: "Pending payment", value: pending },
+    { href: "/admin/orders?status=SHIPPED", label: "Shipped", value: shipped },
     { href: "/admin/orders?status=DELIVERED", label: "Completed", value: completed },
+  ];
+
+  const money = [
+    { label: "Total revenue", value: formatRupees(revenuePaise), note: "captured payments" },
+    { label: "Shipping cost (est.)", value: formatRupees(shippingEstPaise), note: "dispatched weight × rate" },
   ];
 
   const tiles = [
@@ -46,7 +63,7 @@ export default async function DashboardPage() {
       <PageHeader title="Dashboard" subtitle="Everything that needs a human, at a glance." />
 
       <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-lc-green-400">Orders</h2>
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {kpis.map((k) => (
           <Link key={k.href} href={k.href}>
             <Card className="h-full transition-colors hover:border-lc-green-700">
@@ -54,6 +71,17 @@ export default async function DashboardPage() {
               <div className="mt-2 text-3xl font-extrabold text-lc-green-800">{k.value}</div>
             </Card>
           </Link>
+        ))}
+      </div>
+
+      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-lc-green-400">Revenue</h2>
+      <div className="mb-8 grid grid-cols-2 gap-3">
+        {money.map((m) => (
+          <Card key={m.label} className="h-full">
+            <div className="text-[13px] font-semibold text-lc-green-400">{m.label}</div>
+            <div className="mt-2 text-2xl font-extrabold text-lc-green-800">{m.value}</div>
+            <div className="mt-1 text-[11.5px] text-lc-green-400">{m.note}</div>
+          </Card>
         ))}
       </div>
 
