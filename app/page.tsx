@@ -64,9 +64,14 @@ export default async function Home() {
                   {sku.titles.length > 4 ? "…" : ""}
                 </span>
               </p>
-              <div className="mt-4 flex items-end justify-between">
-                <Price paise={sku.pricePaise} />
-                <span className="inline-flex items-center gap-1 text-sm font-bold text-lc-green-700">
+              <div className="mt-4 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <Price paise={sku.pricePaise} shippingIncluded={false} />
+                  <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">
+                    shipping included
+                  </p>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-lc-border bg-lc-cream px-4 py-2 text-[13px] font-bold text-lc-green-800 transition-colors group-hover:border-lc-gold group-hover:bg-lc-gold group-hover:text-lc-on-gold">
                   View set
                   <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
                 </span>
