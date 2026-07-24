@@ -2,6 +2,7 @@ import type { Order } from "@prisma/client";
 import { formatRupees } from "@/lib/money";
 import { isCancellable } from "@/lib/orders/status";
 import { CancelOrderForm } from "@/components/store/cancel-order-form";
+import { Button } from "@/components/ui/button";
 
 // Read-only order view shown on /track once identity is proven (magic link, session, or a
 // verified order-id+phone token). Plain-language status, delivery window (§7), and the amount
@@ -70,6 +71,17 @@ export function OrderDetail({ order, cancelToken }: { order: Order; cancelToken?
             <Row k="Refund" v={formatRupees(order.refundAmountPaise)} />
           )}
         </div>
+
+        {order.invoiceNumber && cancelToken && (
+          <div className="mt-4">
+            <Button asChild variant="outline" size="sm">
+              {/* Carries the same durable order token the page was opened with (§12 gate). */}
+              <a href={`/api/orders/${order.id}/invoice?token=${encodeURIComponent(cancelToken)}`}>
+                Download Bill of Supply
+              </a>
+            </Button>
+          </div>
+        )}
       </div>
 
       {pendingCancel && (

@@ -5,6 +5,8 @@ import { formatRupees, computeRefund } from "@/lib/money";
 import { PageHeader, Card, KV } from "@/components/admin/ui";
 import { StatusBadge, statusLabel } from "@/components/admin/status-badge";
 import { TransitionControls } from "@/components/admin/transitions";
+import { EditAddressForm } from "@/components/admin/edit-address-form";
+import { Button } from "@/components/ui/button";
 
 // Order detail (§14): full snapshot + the append-only OrderEvent timeline + legal-transition
 // controls. Everything read-only here renders from the order row (invoice value uses the frozen
@@ -63,6 +65,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {order.courier && <KV k="Courier" v={order.courier} />}
           {order.dispatchedAt && <KV k="Dispatched" v={dt(order.dispatchedAt)} />}
           {order.printStartedAt && <KV k="Print started" v={dt(order.printStartedAt)} />}
+          {order.invoiceNumber && (
+            <div className="mt-3">
+              <Button asChild variant="secondary" size="sm">
+                <a href={`/api/orders/${order.id}/invoice`}>Download Bill of Supply</a>
+              </Button>
+            </div>
+          )}
         </Card>
 
         <Card>
@@ -74,7 +83,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             k="Address"
             v={
               <span className="text-right">
-                {order.addrLine1}{order.addrLine2 ? `, ${order.addrLine2}` : ""}<br />
+                {order.addrLine1}<br />
+                {order.addrLine2 && <>{order.addrLine2}<br /></>}
                 {order.city}, {order.state} {order.pincode}
               </span>
             }
@@ -103,6 +113,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
         <Card>
           <TransitionControls order={order} />
+        </Card>
+
+        <Card>
+          <EditAddressForm
+            orderId={order.id}
+            addrLine1={order.addrLine1}
+            addrLine2={order.addrLine2}
+            city={order.city}
+            state={order.state}
+            pincode={order.pincode}
+            customerPhone={order.customerPhone}
+          />
         </Card>
       </div>
 
