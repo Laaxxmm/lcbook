@@ -15,7 +15,15 @@ import { examBadge } from "@/app/_lib/sku-view";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
-export default async function CheckoutPage({ params }: { params: Promise<{ sku: string }> }) {
+const POD_MAX_QTY = 10;
+
+export default async function CheckoutPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ sku: string }>;
+  searchParams: Promise<{ qty?: string }>;
+}) {
   const { sku: code } = await params;
   const sku = await prisma.sku.findUnique({ where: { code } });
   if (!sku || !sku.active) notFound();
@@ -27,6 +35,11 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sku: 
   }
 
   const qty = await availableStock(prisma, sku.code);
+  // Max is real availability for in-stock, a small cap for print-to-order (stock 0).
+  const maxQty = qty > 0 ? qty : POD_MAX_QTY;
+  // Carry the quantity chosen on the product page (?qty=), clamped to what's allowed.
+  const requestedQty = Number((await searchParams).qty);
+  const initialQty = Number.isInteger(requestedQty) ? Math.min(Math.max(requestedQty, 1), maxQty) : 1;
 
   return (
     <Container className="py-8 sm:py-12">
@@ -45,7 +58,13 @@ export default async function CheckoutPage({ params }: { params: Promise<{ sku: 
         </p>
 
         <div className="mt-6">
-          <CheckoutForm skuCode={sku.code} setName={sku.name} amountPaise={sku.pricePaise} />
+          <CheckoutForm
+            skuCode={sku.code}
+            setName={sku.name}
+            amountPaise={sku.pricePaise}
+            maxQty={maxQty}
+            initialQty={initialQty}
+          />
         </div>
       </div>
     </Container>

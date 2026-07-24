@@ -18,7 +18,9 @@ const digits = (label: string, len: number) =>
 
 const Body = z.object({
   skuCode: z.enum(SKU_CODES),
-  qty: z.number().int().min(1).max(10).optional(),
+  // Sanity ceiling only — the UI clamps to real availability and the frozen core prevents
+  // oversell at CONFIRMED. ponytail: flat cap of 100; tighten per-SKU only if abuse shows up.
+  qty: z.number().int().min(1).max(100).optional(),
   customer: z.object({
     name: z.string().trim().min(1).max(120),
     email: z.string().trim().email().max(200),

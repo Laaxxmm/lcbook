@@ -1,6 +1,7 @@
+import type { Sku } from "@prisma/client";
 import { ArrowRight, BookText, Play, type LucideIcon } from "lucide-react";
 import type { SkuCode } from "@/lib/catalogue";
-import { EBOOK_URL, COURSE_URL, elearningUtm } from "@/config/elearning";
+import { effectiveEbookUrl, effectiveCourseUrl, elearningUtm } from "@/config/elearning";
 import { DIGITAL } from "@/app/_lib/digital";
 import { formatRupees } from "@/lib/money";
 
@@ -47,10 +48,10 @@ function OutboundRow({
   );
 }
 
-export function ProductUpsell({ skuCode }: { skuCode: SkuCode }) {
-  const d = DIGITAL[skuCode];
-  const ebookHref = EBOOK_URL[skuCode];
-  const courseHref = COURSE_URL[skuCode];
+export function ProductUpsell({ sku }: { sku: Sku }) {
+  const d = DIGITAL[sku.code as SkuCode];
+  const ebookHref = effectiveEbookUrl(sku);
+  const courseHref = effectiveCourseUrl(sku);
   if (!d || (!ebookHref && !courseHref)) return null; // both missing → no panel
 
   const utm = elearningUtm();

@@ -4,13 +4,16 @@ import { notFound } from "next/navigation";
 import { MapPin, MessageCircle, Truck, Check, Package } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { availableStock } from "@/lib/inventory";
-import type { SkuCode } from "@/lib/catalogue";
 import { Container } from "@/components/ui/container";
 import { Price } from "@/components/ui/price";
-import { StockBadge } from "@/components/ui/stock-badge";
-import { Button } from "@/components/ui/button";
+import { StockBadge, stockStatus, CornerRibbon } from "@/components/ui/stock-badge";
 import { ProductUpsell } from "@/components/store/product-upsell";
+import { ProductPurchase } from "@/components/store/product-purchase";
 import { examBadge } from "@/app/_lib/sku-view";
+
+// POD (stock 0) allows a small bulk order; in-stock is capped at real availability. Both stay
+// within the checkout API's sanity ceiling. The frozen core still prevents oversell at CONFIRMED.
+const POD_MAX_QTY = 10;
 
 // Product page (§15). SSR for live availability + SEO; rendered on demand so `next build`
 // needs no database. Fulfilment state (in-stock vs print-to-order) is shown BEFORE payment —
@@ -48,6 +51,9 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
 
   const qty = await availableStock(prisma, sku.code);
   const inStock = qty > 0;
+  // Corner ribbon + max quantity are both driven only by real availability (§15, data-truthful).
+  const showRibbon = stockStatus(qty).tone === "in";
+  const maxQty = inStock ? qty : POD_MAX_QTY;
   const cancellationLine = inStock
     ? "Cancel any time before dispatch — refunded minus payment-gateway charges."
     : "Cancel until printing starts — refunded minus gateway charges; not cancellable once printing begins.";
@@ -55,36 +61,44 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
   return (
     <Container className="py-8 sm:py-12">
       <div className="mx-auto max-w-xl">
-        {/* 1. Exam badge + format (Hardcopy) + set name */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
-            {examBadge(sku.code)}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full border border-lc-border bg-white px-3 py-1 text-[12px] font-bold text-lc-green-700">
-            <Package className="h-3.5 w-3.5" aria-hidden />
-            Hardcopy
-          </span>
-        </div>
-        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-lc-green-800 sm:text-3xl">
-          {sku.name}
-        </h1>
+        {/* Hero — relative + overflow-hidden so the in-stock corner ribbon clips at the corner. */}
+        <div className="relative overflow-hidden">
+          {showRibbon && <CornerRibbon />}
+          {/* 1. Exam badge + format (Hardcopy) + set name */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
+              {examBadge(sku.code)}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-lc-border bg-white px-3 py-1 text-[12px] font-bold text-lc-green-700">
+              <Package className="h-3.5 w-3.5" aria-hidden />
+              Hardcopy
+            </span>
+          </div>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-lc-green-800 sm:text-3xl">
+            {sku.name}
+          </h1>
 
-        {/* 2. Price + shipping included */}
-        <div className="mt-4">
-          <Price paise={sku.pricePaise} />
+          {/* 2. Price + shipping included */}
+          <div className="mt-4">
+            <Price paise={sku.pricePaise} />
+          </div>
+
+          {/* 3. Stock state + delivery window — quantity-driven. When the ribbon shows it already
+              says "In stock", so drop the redundant badge and keep only the delivery window. */}
+          <div className="mt-3">
+            {showRibbon ? (
+              <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-lc-green-700">
+                <Truck className="h-4 w-4 shrink-0" aria-hidden />
+                Ships in 1–2 working days
+              </span>
+            ) : (
+              <StockBadge qty={qty} size="lg" />
+            )}
+          </div>
         </div>
 
-        {/* 3. Stock state + delivery window — prominent, quantity-driven */}
-        <div className="mt-3">
-          <StockBadge qty={qty} size="lg" />
-        </div>
-
-        {/* 4. Buy button (inline; sticky bar below on mobile) */}
-        <div className="mt-5 hidden sm:block">
-          <Button asChild size="xl">
-            <Link href={`/${sku.code}/checkout`}>Buy this set</Link>
-          </Button>
-        </div>
+        {/* 4. Quantity + buy (inline desktop CTA + mobile sticky bar) */}
+        <ProductPurchase code={sku.code} unitPricePaise={sku.pricePaise} maxQty={maxQty} />
 
         {/* 5. Cancellation terms — one short line, not a buried link */}
         <p className="mt-4 text-[13px] text-lc-green-400">{cancellationLine}</p>
@@ -109,7 +123,7 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
         </section>
 
         {/* 7. Ebook / course upsell — below the primary action, missing rows hidden */}
-        <ProductUpsell skuCode={sku.code as SkuCode} />
+        <ProductUpsell sku={sku} />
 
         {/* 8. Trust strip */}
         <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-lc-border pt-5 text-[13px] text-lc-green-400">
@@ -133,22 +147,6 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
             <Truck className="h-4 w-4 shrink-0" aria-hidden />
             Track your order
           </Link>
-        </div>
-      </div>
-
-      {/* Sticky thumb-reachable buy bar on mobile (§16 item 5) — taller, near-full-width
-          gold CTA, safe-area padding. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lc-border bg-[rgba(250,247,242,0.95)] [backdrop-filter:blur(8px)] [box-shadow:0_-6px_20px_rgba(14,59,46,0.08)] sm:hidden">
-        <div className="mx-auto flex max-w-container items-center gap-4 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="shrink-0 leading-tight">
-            <div className="text-[19px] font-extrabold tracking-tight text-lc-green-800">
-              ₹{(sku.pricePaise / 100).toLocaleString("en-IN")}
-            </div>
-            <div className="text-[11px] text-lc-green-400">shipping included</div>
-          </div>
-          <Button asChild size="xl" className="flex-1">
-            <Link href={`/${sku.code}/checkout`}>Buy this set</Link>
-          </Button>
         </div>
       </div>
     </Container>

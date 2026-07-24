@@ -225,14 +225,29 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
   const bookCount = intField(fd, "bookCount");
   const priceRupees = Number(str(fd, "priceRupees"));
   const weightGrams = intField(fd, "weightGrams");
+  // Outbound e-learning links (§3): optional, empty clears (falls back to config default);
+  // if present must be an http(s) URL — never persist a dead link.
+  const ebookUrl = str(fd, "ebookUrl");
+  const courseUrl = str(fd, "courseUrl");
+  const badUrl = (u: string) => u !== "" && !/^https?:\/\/\S+$/i.test(u);
   if (!code) return { error: "Bad request." };
   if (!name) return { error: "Name is required." };
   if (bookCount === null || bookCount < 1) return { error: "Book count must be a whole number ≥ 1." };
   if (!Number.isFinite(priceRupees) || priceRupees <= 0) return { error: "Price must be a positive number." };
   if (weightGrams === null || weightGrams <= 0) return { error: "Weight (grams) must be a positive whole number." };
+  if (badUrl(ebookUrl)) return { error: "eBook URL must start with http:// or https://" };
+  if (badUrl(courseUrl)) return { error: "Course URL must start with http:// or https://" };
 
   try {
-    await updateSku(code, { name, titles, bookCount, pricePaise: Math.round(priceRupees * 100), weightGrams });
+    await updateSku(code, {
+      name,
+      titles,
+      bookCount,
+      pricePaise: Math.round(priceRupees * 100),
+      weightGrams,
+      ebookUrl: ebookUrl || null,
+      courseUrl: courseUrl || null,
+    });
     revalidatePath("/admin/skus");
     revalidatePath(`/admin/skus/${code}`);
     return { ok: true, msg: "Saved. Past orders keep their frozen snapshot." };

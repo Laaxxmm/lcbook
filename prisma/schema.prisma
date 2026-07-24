@@ -67,6 +67,9 @@ model Sku {
   stockQty        Int      @default(0)
   printQueueCount Int      @default(0)
   active          Boolean  @default(true)
+  // Outbound e-learning links (§3). Admin-editable; empty/null falls back to config/elearning.ts.
+  ebookUrl        String?
+  courseUrl       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

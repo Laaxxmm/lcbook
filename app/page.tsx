@@ -4,10 +4,10 @@ import { ArrowRight, BookOpen, BookText, Package } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { Price } from "@/components/ui/price";
 import { Container } from "@/components/ui/container";
-import { stockStatus, stockTone } from "@/components/ui/stock-badge";
+import { stockStatus, stockTone, CornerRibbon } from "@/components/ui/stock-badge";
 import { examBadge } from "@/app/_lib/sku-view";
 import { DIGITAL } from "@/app/_lib/digital";
-import { EBOOK_URL, elearningUtm } from "@/config/elearning";
+import { effectiveEbookUrl, elearningUtm } from "@/config/elearning";
 import type { SkuCode } from "@/lib/catalogue";
 
 // Catalogue home (§15). SSR so live prices/availability show and this indexed URL keeps its
@@ -83,6 +83,9 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
       {skus.map((sku) => {
         const stock = stockStatus(sku.stockQty);
         const StockIcon = stock.Icon;
+        // Corner ribbon replaces the redundant "In stock" pill; the pill is kept for the
+        // "Only N left" / "Made to order" states (§15, data-truthful — ribbon only when in stock).
+        const showRibbon = stock.tone === "in";
         return (
           <Link
             key={sku.code}
@@ -91,17 +94,20 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
           >
             {/* Gold hairline that wipes in on hover — restrained accent. */}
             <span className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-lc-gold transition-transform duration-300 group-hover:scale-x-100" />
+            {showRibbon && <CornerRibbon />}
             <div className="flex items-start justify-between gap-2">
               <span className="inline-flex w-fit rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
                 {examBadge(sku.code)}
               </span>
-              {/* Edge ribbon — copy driven only by real stockQty. */}
-              <span
-                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-bold ${stockTone[stock.tone]}`}
-              >
-                <StockIcon className="h-3 w-3 shrink-0" aria-hidden />
-                {stock.short}
-              </span>
+              {/* Edge pill — copy driven only by real stockQty. Hidden when the ribbon shows. */}
+              {!showRibbon && (
+                <span
+                  className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-bold ${stockTone[stock.tone]}`}
+                >
+                  <StockIcon className="h-3 w-3 shrink-0" aria-hidden />
+                  {stock.short}
+                </span>
+              )}
             </div>
             <h2 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h2>
             <p className="mt-1 flex items-start gap-1.5 text-[13px] text-lc-green-400">
@@ -130,8 +136,10 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
 
 function EbookGrid({ skus }: { skus: Sku[] }) {
   // §3: display + redirect only, and a MISSING URL hides that item entirely (no dead links,
-  // no price with no destination). Only SKUs with a published eBook URL appear here.
-  const items = skus.filter((s) => EBOOK_URL[s.code as SkuCode]);
+  // no price with no destination). Only SKUs with an effective eBook URL appear here.
+  const items = skus
+    .map((s) => ({ sku: s, href: effectiveEbookUrl(s) }))
+    .filter((x): x is { sku: Sku; href: string } => Boolean(x.href));
   const utm = elearningUtm();
 
   if (items.length === 0) {
@@ -149,12 +157,12 @@ function EbookGrid({ skus }: { skus: Sku[] }) {
         <strong>non-refundable</strong>, and a Hardcopy set doesn&apos;t include digital access.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((sku) => {
+        {items.map(({ sku, href }) => {
           const d = DIGITAL[sku.code as SkuCode];
           return (
             <a
               key={sku.code}
-              href={EBOOK_URL[sku.code as SkuCode]! + utm}
+              href={href + utm}
               target="_blank"
               rel="noopener noreferrer"
               className="group relative flex flex-col overflow-hidden rounded-[14px] border border-lc-border bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(232,163,61,0.5)] hover:shadow-[0_12px_28px_rgba(14,59,46,0.1)]"

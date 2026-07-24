@@ -43,6 +43,14 @@ export default async function SkuEditPage({ params }: { params: Promise<{ code: 
                 Titles (comma-separated)
                 <input name="titles" defaultValue={sku.titles.join(", ")} className={inputCls} />
               </label>
+              <label className="grid gap-1 text-[13px] font-semibold text-lc-green-400">
+                eBook URL (optional — empty uses the default)
+                <input name="ebookUrl" type="url" inputMode="url" placeholder="https://elearning.learncrew.org/…" defaultValue={sku.ebookUrl ?? ""} className={inputCls} />
+              </label>
+              <label className="grid gap-1 text-[13px] font-semibold text-lc-green-400">
+                Course URL (optional — empty uses the default)
+                <input name="courseUrl" type="url" inputMode="url" placeholder="https://elearning.learncrew.org/…" defaultValue={sku.courseUrl ?? ""} className={inputCls} />
+              </label>
               <div className="grid gap-2 sm:grid-cols-3">
                 <label className="grid gap-1 text-[13px] font-semibold text-lc-green-400">
                   Book count

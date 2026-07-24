@@ -12,6 +12,9 @@ export interface SkuChanges {
   bookCount?: number;
   stockQty?: number;
   active?: boolean;
+  // Outbound e-learning links (§3). Pass "" to clear (falls back to config default).
+  ebookUrl?: string | null;
+  courseUrl?: string | null;
 }
 
 function serialise(v: unknown): string {

@@ -43,11 +43,24 @@ export function stockStatus(qty: number): StockStatus {
   };
 }
 
+// Bright, high-contrast fills so each state pops and is instantly distinguishable:
+//   in  → vivid green (go / available)   low → vivid red (urgency)   pod → vivid amber (wait)
 export const stockTone: Record<StockTone, string> = {
-  in: "bg-[rgba(14,59,46,0.08)] text-lc-green-800",
-  low: "bg-[rgba(232,163,61,0.20)] text-lc-on-gold ring-1 ring-inset ring-[rgba(232,163,61,0.5)]",
-  pod: "bg-[rgba(14,59,46,0.06)] text-lc-green-400",
+  in: "bg-[#16a34a] text-white",
+  low: "bg-[#dc2626] text-white",
+  pod: "bg-[#f59e0b] text-[#3A2A08]",
 };
+
+// Classic 45°-rotated crossed-corner ribbon, pinned top-right. Parent MUST be
+// `relative overflow-hidden` so the tails clip into the corner. Shown ONLY when genuinely
+// in stock (§15 — data-truthful). Bright green reads as "available" (conventional for in-stock).
+export function CornerRibbon({ label = "In stock" }: { label?: string }) {
+  return (
+    <span className="pointer-events-none absolute right-[-52px] top-[26px] z-10 w-[180px] rotate-45 bg-[#16a34a] py-1 text-center text-[11px] font-extrabold uppercase tracking-wider text-white shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
+      {label}
+    </span>
+  );
+}
 
 interface StockBadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /** Live available quantity (stock minus soft reserves). */

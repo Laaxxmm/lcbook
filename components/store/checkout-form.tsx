@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { CONSENT_TEXT } from "@/app/_lib/consent";
 
 // All Indian States + Union Territories — native <select> so it stays mobile-friendly
@@ -55,7 +56,10 @@ const INDIAN_STATES = [
 interface CheckoutFormProps {
   skuCode: string;
   setName: string;
+  /** Unit price in paise. The line total is unit × qty. */
   amountPaise: number;
+  maxQty: number;
+  initialQty: number;
 }
 
 interface RazorpayHandlerResponse {
@@ -96,9 +100,11 @@ function rupees(paise: number): string {
   return `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export function CheckoutForm({ skuCode, setName, amountPaise }: CheckoutFormProps) {
+export function CheckoutForm({ skuCode, setName, amountPaise, maxQty, initialQty }: CheckoutFormProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [qty, setQty] = useState(initialQty);
+  const lineTotal = amountPaise * qty;
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -109,7 +115,7 @@ export function CheckoutForm({ skuCode, setName, amountPaise }: CheckoutFormProp
 
     const payload = {
       skuCode,
-      qty: 1,
+      qty,
       customer: { name: g("name"), email: g("email"), phone: g("phone") },
       address: {
         line1: g("line1"),
@@ -181,6 +187,16 @@ export function CheckoutForm({ skuCode, setName, amountPaise }: CheckoutFormProp
   return (
     <form onSubmit={onSubmit} className="pb-32">
       <div className="grid grid-cols-1 gap-4">
+        <div>
+          <label className={labelCls} htmlFor="qty">Quantity</label>
+          <div className="flex flex-wrap items-center gap-3">
+            <QuantityStepper value={qty} onChange={setQty} min={1} max={maxQty} />
+            <span className="text-[13px] text-lc-green-400">
+              {rupees(amountPaise)} × {qty} ={" "}
+              <strong className="text-lc-green-800">{rupees(lineTotal)}</strong>
+            </span>
+          </div>
+        </div>
         <div>
           <label className={labelCls} htmlFor="name">Full name</label>
           <input id="name" name="name" required autoComplete="name" className={inputCls} />
@@ -273,8 +289,10 @@ export function CheckoutForm({ skuCode, setName, amountPaise }: CheckoutFormProp
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lc-border bg-[rgba(250,247,242,0.95)] [backdrop-filter:blur(8px)] [box-shadow:0_-6px_20px_rgba(14,59,46,0.08)]">
         <div className="mx-auto flex max-w-container items-center gap-4 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="shrink-0 leading-tight">
-            <div className="text-[17px] font-extrabold tracking-tight text-lc-green-800">{rupees(amountPaise)}</div>
-            <div className="text-[11px] text-lc-green-400">shipping included</div>
+            <div className="text-[17px] font-extrabold tracking-tight text-lc-green-800">{rupees(lineTotal)}</div>
+            <div className="text-[11px] text-lc-green-400">
+              {qty > 1 ? `${qty} sets · shipping included` : "shipping included"}
+            </div>
           </div>
           <Button type="submit" disabled={busy} size="xl" className="flex-1">
             {busy ? "Opening payment…" : "Pay securely"}
