@@ -27,3 +27,14 @@
     font-feature-settings: "kern";
   }
 }
+
+/* Print: hide all shared chrome so only the shipping-label card prints (see
+   app/admin/(panel)/orders/[id]/label). Elements tagged .no-print drop out. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    margin: 12mm;
+  }
+}

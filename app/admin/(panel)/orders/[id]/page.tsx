@@ -5,7 +5,6 @@ import { formatRupees, computeRefund } from "@/lib/money";
 import { PageHeader, Card, KV } from "@/components/admin/ui";
 import { StatusBadge, statusLabel } from "@/components/admin/status-badge";
 import { TransitionControls } from "@/components/admin/transitions";
-import { EditAddressForm } from "@/components/admin/edit-address-form";
 import { Button } from "@/components/ui/button";
 
 // Order detail (§14): full snapshot + the append-only OrderEvent timeline + legal-transition
@@ -72,6 +71,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </Button>
             </div>
           )}
+          <div className="mt-3">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/orders/${order.id}/label`}>Print shipping label</Link>
+            </Button>
+          </div>
         </Card>
 
         <Card>
@@ -113,18 +117,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
         <Card>
           <TransitionControls order={order} />
-        </Card>
-
-        <Card>
-          <EditAddressForm
-            orderId={order.id}
-            addrLine1={order.addrLine1}
-            addrLine2={order.addrLine2}
-            city={order.city}
-            state={order.state}
-            pincode={order.pincode}
-            customerPhone={order.customerPhone}
-          />
         </Card>
       </div>
 

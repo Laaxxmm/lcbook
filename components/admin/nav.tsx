@@ -21,7 +21,7 @@ export function AdminNav({ adminEmail }: { adminEmail: string }) {
   const active = (l: (typeof LINKS)[number]) => (l.exact ? path === l.href : path.startsWith(l.href));
 
   return (
-    <div className="mb-8 border-b border-lc-border">
+    <div className="no-print mb-8 border-b border-lc-border">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
         <div className="text-[13px] font-semibold uppercase tracking-wide text-lc-gold">Learn Crew · Admin</div>
         <div className="flex items-center gap-3 text-[13px] text-lc-green-400">

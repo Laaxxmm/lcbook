@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={jakarta.variable}>
       <body className="min-h-dvh bg-lc-cream font-sans text-lc-green-800 antialiased">
         {/* Announcement bar — one tidy line on mobile (§16). */}
-        <div className="bg-lc-green-900 text-lc-cream">
+        <div className="no-print bg-lc-green-900 text-lc-cream">
           <Container className="flex h-8 items-center justify-center gap-1.5 sm:h-9">
             <Truck className="h-3.5 w-3.5 shrink-0 text-lc-gold" aria-hidden />
             <span className="truncate text-[11.5px] font-medium tracking-tight sm:text-[13px]">
@@ -67,7 +67,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Sticky nav — backdrop blur (§16). Logo mark + non-wrapping lockup. */}
-        <header className="sticky top-0 z-40 border-b border-lc-border bg-[rgba(250,247,242,0.9)] [backdrop-filter:saturate(160%)_blur(12px)]">
+        <header className="no-print sticky top-0 z-40 border-b border-lc-border bg-[rgba(250,247,242,0.9)] [backdrop-filter:saturate(160%)_blur(12px)]">
           <Container className="flex h-[60px] items-center justify-between gap-3 sm:h-[72px] sm:gap-4">
             <Link href="/" className="flex min-w-0 shrink items-center gap-2 sm:gap-2.5">
               <BrandLogo
@@ -100,7 +100,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <main className="min-h-[60vh]">{children}</main>
 
         {/* Footer — seller block (§2) + policy links (§15). DISPLAY address only. */}
-        <footer className="mt-24 border-t border-lc-border bg-lc-green-800 text-lc-cream">
+        <footer className="no-print mt-24 border-t border-lc-border bg-lc-green-800 text-lc-cream">
           <Container className="py-12">
             {/* Brand lockup — mascot mark + cream wordmark, mirroring the header. */}
             <div className="flex items-center gap-2.5">

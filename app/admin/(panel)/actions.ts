@@ -128,58 +128,6 @@ export async function dispatchOrder(_prev: ActionState, fd: FormData): Promise<A
   }
 }
 
-// ── Edit delivery address (§14, audited). NOT a status change: it never routes through
-// transitionOrder and never touches amount/snapshot/status. Updates the address + courier phone
-// and writes an append-only OrderEvent (actor ADMIN, from=to=current status) whose metadata
-// captures old→new, all in one transaction so the edit and its audit row commit together. ──
-export async function editOrderAddress(orderId: string, fd: FormData): Promise<ActionState> {
-  const g = await guard();
-  if (g) return g;
-  if (!orderId) return { error: "Bad request." };
-
-  const addrLine1 = str(fd, "addrLine1");
-  const addrLine2 = str(fd, "addrLine2");
-  const city = str(fd, "city");
-  const state = str(fd, "state");
-  const pincode = str(fd, "pincode");
-  const customerPhone = str(fd, "customerPhone");
-
-  if (!addrLine1 || !city || !state || !pincode) return { error: "Line 1, city, state and pincode are all required." };
-  if (!/^\d{6}$/.test(pincode)) return { error: "Pincode must be exactly 6 digits." };
-  if (!/^\d{6,15}$/.test(customerPhone.replace(/[\s+\-]/g, ""))) return { error: "Enter a valid phone number (digits only)." };
-
-  const next = { addrLine1, addrLine2: addrLine2 || null, city, state, pincode, customerPhone };
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      const current = await tx.order.findUnique({ where: { id: orderId } });
-      if (!current) throw new Error(`order not found: ${orderId}`);
-      const prev = {
-        addrLine1: current.addrLine1,
-        addrLine2: current.addrLine2,
-        city: current.city,
-        state: current.state,
-        pincode: current.pincode,
-        customerPhone: current.customerPhone,
-      };
-      await tx.order.update({ where: { id: orderId }, data: next });
-      await tx.orderEvent.create({
-        data: {
-          orderId,
-          fromStatus: current.status,
-          toStatus: current.status, // not a status change — audit only
-          actor: Actor.ADMIN,
-          metadata: { kind: "ADDRESS_EDIT", before: prev, after: next } as Prisma.InputJsonValue,
-        },
-      });
-    });
-    revalidateOrder(orderId);
-    return { ok: true, msg: "Delivery address updated — logged to the timeline." };
-  } catch (err) {
-    return fail(err);
-  }
-}
-
 // ── Refund an ALREADY-cancelled order (order-detail "Initiate refund" button, for an admin-direct
 // CANCELLED_BY_ADMIN). Double-refund-guarded in lib/refunds. The cancellation INBOX uses the
 // approve action below, not this. ──
