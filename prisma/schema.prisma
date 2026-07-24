@@ -1,0 +1,225 @@
+// Learn Crew Publications — Phase 1 data model (spec §5).
+// Postgres only (spec forbids SQLite: concurrent webhooks/cron/admin hit same rows).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  CREATED
+  PAYMENT_PENDING
+  PAYMENT_FAILED
+  PAID
+  CONFIRMED
+  // IN_STOCK branch
+  PICKING
+  PACKED
+  SHIPPED
+  DELIVERED
+  // POD branch
+  PRINT_QUEUED
+  PRINT_STARTED
+  PRINT_DONE
+  // cancellation / refund
+  CANCELLED_BY_USER
+  CANCELLED_BY_ADMIN
+  REFUND_INITIATED
+  REFUNDED
+  // post-delivery
+  RTO
+  DAMAGE_REPLACEMENT
+}
+
+enum FulfilmentType {
+  IN_STOCK
+  POD
+}
+
+enum Actor {
+  SYSTEM
+  ADMIN
+  CUSTOMER
+}
+
+enum RefundStatus {
+  INITIATED
+  PROCESSED
+  FAILED
+}
+
+enum LoginTokenType {
+  MAGIC_LINK
+  OTP
+}
+
+model Sku {
+  code            String   @id
+  name            String
+  bookCount       Int
+  titles          String[]
+  pricePaise      Int
+  weightGrams     Int
+  stockQty        Int      @default(0)
+  printQueueCount Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  orders Order[]
+  audits SkuAudit[]
+}
+
+model Order {
+  id  String @id // human id: LC-2627-000431
+  seq Int    @unique // monotonic order number, drives id + discount code
+
+  status         OrderStatus     @default(CREATED)
+  skuCode        String
+  sku            Sku             @relation(fields: [skuCode], references: [code]) // Restrict on delete: a SKU with orders can never be hard-deleted (§5)
+  qty            Int             @default(1)
+  amountPaise    Int
+  fulfilmentType FulfilmentType? // decided at CONFIRMED (§7)
+
+  // customer
+  customerName  String
+  customerEmail String
+  customerPhone String
+
+  // address
+  addrLine1 String
+  addrLine2 String?
+  city      String
+  state     String
+  pincode   String
+
+  // payment / razorpay
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String?
+
+  // fulfilment
+  awb            String?
+  courier        String?
+  reservedUntil  DateTime? // soft reserve TTL (§7)
+  dispatchedAt   DateTime?
+  deliveredAt    DateTime?
+  printStartedAt DateTime?
+
+  // cancellation / refund
+  cancelRequestedAt        DateTime?
+  cancelReason             String?
+  refundId                 String?       @unique
+  refundAmountPaise        Int?
+  gatewayFeeRetainedPaise  Int?
+  refundStatus             RefundStatus?
+
+  // consent (DPDP Act — never pre-ticked)
+  marketingConsent   Boolean @default(false)
+  consentAt          DateTime?
+  consentIp          String?
+  consentTextVersion String?
+
+  // billing / marketing
+  invoiceNumber String? @unique // LC/2026-27/0001 — allocated at PAID->CONFIRMED
+  discountCode  String? @unique // LC{seq}-COURSE
+
+  // amount reconciliation flag (§9)
+  amountMismatchFlagged Boolean @default(false)
+
+  // frozen SKU snapshot — invoices render from THIS, never live Sku (§5, load-bearing)
+  snapshotName        String
+  snapshotTitles      String[]
+  snapshotPricePaise  Int
+  snapshotBookCount   Int
+  snapshotWeightGrams Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    OrderEvent[]
+  sheetJobs SheetSyncJob[]
+
+  @@index([status])
+  @@index([skuCode])
+}
+
+// Append-only. Never update or delete (§5).
+model OrderEvent {
+  id         String      @id @default(cuid())
+  orderId    String
+  order      Order       @relation(fields: [orderId], references: [id])
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  actor      Actor
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+model SkuAudit {
+  id        String   @id @default(cuid())
+  skuCode   String
+  sku       Sku      @relation(fields: [skuCode], references: [code])
+  field     String
+  oldValue  String?
+  newValue  String?
+  changedAt DateTime @default(now())
+
+  @@index([skuCode])
+}
+
+model WebhookEvent {
+  id              String   @id @default(cuid())
+  provider        String
+  providerEventId String   @unique // idempotency key (§9)
+  payload         Json
+  processedAt     DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?
+  name      String?
+  createdAt DateTime @default(now())
+  // No password column ever (§5, §8).
+
+  tokens LoginToken[]
+}
+
+model LoginToken {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  tokenHash String // store hash only (§8)
+  type      LoginTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+
+  @@index([userId])
+}
+
+// One row per financial year, locked on increment (§5, §12).
+model InvoiceCounter {
+  financialYear String @id // e.g. "2026-27"
+  lastNumber    Int    @default(0)
+}
+
+model SheetSyncJob {
+  orderId   String
+  order     Order     @relation(fields: [orderId], references: [id])
+  id        String    @id @default(cuid())
+  payload   Json
+  attempts  Int       @default(0)
+  lastError String?
+  syncedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([orderId])
+}
