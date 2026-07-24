@@ -22,3 +22,16 @@ export const DIGITAL: Record<SkuCode, DigitalInfo> = {
   CAT: { ebookPaise: 89_900, ebookLabel: "eBook (1-year access)", coursePaise: 0 },
   CLAT: { ebookPaise: 89_900, ebookLabel: "eBook (1-year access)", coursePaise: 0 },
 };
+
+// Effective DISPLAY prices (§3, §4). The admin-editable DB value wins when set (non-null — 0 is a
+// valid price, so use ??, never ||); otherwise fall back to the DIGITAL map above so nothing breaks.
+// DISPLAY + redirect only — these never touch a real Order amount, Razorpay charge, or invoice.
+type SkuPrices = { code: string; ebookPricePaise?: number | null; coursePricePaise?: number | null };
+
+export function effectiveEbookPaise(sku: SkuPrices): number {
+  return sku.ebookPricePaise ?? DIGITAL[sku.code as SkuCode]?.ebookPaise ?? 0;
+}
+
+export function effectiveCoursePaise(sku: SkuPrices): number {
+  return sku.coursePricePaise ?? DIGITAL[sku.code as SkuCode]?.coursePaise ?? 0;
+}

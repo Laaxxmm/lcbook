@@ -2,7 +2,7 @@ import type { Sku } from "@prisma/client";
 import { ArrowRight, BookText, Play, type LucideIcon } from "lucide-react";
 import type { SkuCode } from "@/lib/catalogue";
 import { effectiveEbookUrl, effectiveCourseUrl, elearningUtm } from "@/config/elearning";
-import { DIGITAL } from "@/app/_lib/digital";
+import { DIGITAL, effectiveEbookPaise, effectiveCoursePaise } from "@/app/_lib/digital";
 import { formatRupees } from "@/lib/money";
 
 // Ebook / recorded-course upsell (§3, §15 item 7) — sits BELOW the primary CTA. Display +
@@ -71,7 +71,7 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
         {ebookHref && (
           <OutboundRow
             Icon={BookText}
-            title={`${d.ebookLabel} — ${formatRupees(d.ebookPaise)}`}
+            title={`${d.ebookLabel} — ${formatRupees(effectiveEbookPaise(sku))}`}
             note='1-year access. Opens as a "course" on WiseApp — this is the eBook, not a wrong link.'
             href={ebookHref + utm}
             cta="Get the eBook"
@@ -80,7 +80,7 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
         {courseHref ? (
           <OutboundRow
             Icon={Play}
-            title={`Recorded course — ${formatRupees(d.coursePaise)}`}
+            title={`Recorded course — ${formatRupees(effectiveCoursePaise(sku))}`}
             note="Includes the eBook and mock tests. 1-year access."
             href={courseHref + utm}
             cta="View the course"

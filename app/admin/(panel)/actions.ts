@@ -230,6 +230,15 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
   const ebookUrl = str(fd, "ebookUrl");
   const courseUrl = str(fd, "courseUrl");
   const badUrl = (u: string) => u !== "" && !/^https?:\/\/\S+$/i.test(u);
+  // DISPLAY-only digital prices (§3/§4): optional rupees → integer paise; empty clears (falls back
+  // to the DIGITAL default). Non-negative (0 is valid — CAT/CLAT course). Returns false if invalid.
+  const toPaiseOrNull = (raw: string): number | null | false => {
+    if (raw === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : false;
+  };
+  const ebookPricePaise = toPaiseOrNull(str(fd, "ebookPriceRupees"));
+  const coursePricePaise = toPaiseOrNull(str(fd, "coursePriceRupees"));
   if (!code) return { error: "Bad request." };
   if (!name) return { error: "Name is required." };
   if (bookCount === null || bookCount < 1) return { error: "Book count must be a whole number ≥ 1." };
@@ -237,6 +246,8 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
   if (weightGrams === null || weightGrams <= 0) return { error: "Weight (grams) must be a positive whole number." };
   if (badUrl(ebookUrl)) return { error: "eBook URL must start with http:// or https://" };
   if (badUrl(courseUrl)) return { error: "Course URL must start with http:// or https://" };
+  if (ebookPricePaise === false) return { error: "eBook price must be a non-negative number." };
+  if (coursePricePaise === false) return { error: "Course price must be a non-negative number." };
 
   try {
     await updateSku(code, {
@@ -247,6 +258,8 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
       weightGrams,
       ebookUrl: ebookUrl || null,
       courseUrl: courseUrl || null,
+      ebookPricePaise,
+      coursePricePaise,
     });
     revalidatePath("/admin/skus");
     revalidatePath(`/admin/skus/${code}`);

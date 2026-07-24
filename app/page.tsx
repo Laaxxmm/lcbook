@@ -6,7 +6,7 @@ import { Price } from "@/components/ui/price";
 import { Container } from "@/components/ui/container";
 import { stockStatus, stockTone, CornerRibbon } from "@/components/ui/stock-badge";
 import { examBadge } from "@/app/_lib/sku-view";
-import { DIGITAL } from "@/app/_lib/digital";
+import { DIGITAL, effectiveEbookPaise } from "@/app/_lib/digital";
 import { effectiveEbookUrl, elearningUtm } from "@/config/elearning";
 import type { SkuCode } from "@/lib/catalogue";
 
@@ -181,7 +181,7 @@ function EbookGrid({ skus }: { skus: Sku[] }) {
               <p className="mt-1 text-[13px] text-lc-green-400">{d.ebookLabel}</p>
               <div className="mt-4 flex items-end justify-between gap-3">
                 <div className="min-w-0">
-                  <Price paise={d.ebookPaise} shippingIncluded={false} />
+                  <Price paise={effectiveEbookPaise(sku)} shippingIncluded={false} />
                   <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">1-year access</p>
                 </div>
                 <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-lc-border bg-lc-cream px-4 py-2 text-[13px] font-bold text-lc-green-800 transition-colors group-hover:border-lc-gold group-hover:bg-lc-gold group-hover:text-lc-on-gold">
