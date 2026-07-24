@@ -9,16 +9,30 @@ import { StatusBadge } from "@/components/admin/status-badge";
 // Admin dashboard (§14): the things that need a human — flags, cancellations, print queue,
 // failed sheet syncs — plus a recent-orders glance.
 export default async function DashboardPage() {
-  const [flagged, cancellations, printQueue, pendingSheet, recent] = await Promise.all([
-    prisma.order.count({ where: { OR: [{ amountMismatchFlagged: true }, { refundStatus: "FAILED" }] } }),
-    prisma.order.count({
-      // Pending customer cancellation requests — matches the inbox filter (§6).
-      where: { cancelRequestedAt: { not: null }, cancelReviewedAt: null, status: { in: CANCELLABLE_STATUSES } },
-    }),
-    prisma.order.count({ where: { status: { in: [OrderStatus.PRINT_QUEUED, OrderStatus.PRINT_STARTED] } } }),
-    prisma.sheetSyncJob.count({ where: { syncedAt: null } }),
-    prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
-  ]);
+  const [received, paid, pending, completed, flagged, cancellations, printQueue, pendingSheet, recent] =
+    await Promise.all([
+      prisma.order.count(),
+      // Paid = payment captured (money in), regardless of later fulfilment/cancellation.
+      prisma.order.count({ where: { razorpayPaymentId: { not: null } } }),
+      // Pending = still awaiting payment.
+      prisma.order.count({ where: { status: { in: [OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING] } } }),
+      prisma.order.count({ where: { status: OrderStatus.DELIVERED } }),
+      prisma.order.count({ where: { OR: [{ amountMismatchFlagged: true }, { refundStatus: "FAILED" }] } }),
+      prisma.order.count({
+        // Pending customer cancellation requests — matches the inbox filter (§6).
+        where: { cancelRequestedAt: { not: null }, cancelReviewedAt: null, status: { in: CANCELLABLE_STATUSES } },
+      }),
+      prisma.order.count({ where: { status: { in: [OrderStatus.PRINT_QUEUED, OrderStatus.PRINT_STARTED] } } }),
+      prisma.sheetSyncJob.count({ where: { syncedAt: null } }),
+      prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
+    ]);
+
+  const kpis = [
+    { href: "/admin/orders", label: "Orders received", value: received },
+    { href: "/admin/orders?status=PAID", label: "Paid", value: paid },
+    { href: "/admin/orders?status=PAYMENT_PENDING", label: "Pending payment", value: pending },
+    { href: "/admin/orders?status=DELIVERED", label: "Completed", value: completed },
+  ];
 
   const tiles = [
     { href: "/admin/flagged", label: "Flagged orders", value: flagged, tone: flagged > 0 },
@@ -31,6 +45,21 @@ export default async function DashboardPage() {
     <div>
       <PageHeader title="Dashboard" subtitle="Everything that needs a human, at a glance." />
 
+      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-lc-green-400">Orders</h2>
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {kpis.map((k) => (
+          <Link key={k.href} href={k.href}>
+            <Card className="h-full transition-colors hover:border-lc-green-700">
+              <div className="text-[13px] font-semibold text-lc-green-400">{k.label}</div>
+              <div className="mt-2 text-3xl font-extrabold text-lc-green-800">{k.value}</div>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-lc-green-400">
+        Needs attention
+      </h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((t) => (
           <Link key={t.href} href={t.href}>
