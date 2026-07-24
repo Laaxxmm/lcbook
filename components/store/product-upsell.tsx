@@ -1,8 +1,14 @@
 import type { Sku } from "@prisma/client";
 import { ArrowRight, BookText, Play, type LucideIcon } from "lucide-react";
 import type { SkuCode } from "@/lib/catalogue";
-import { effectiveEbookUrl, effectiveCourseUrl, elearningUtm } from "@/config/elearning";
-import { DIGITAL, effectiveEbookPaise, effectiveCoursePaise } from "@/app/_lib/digital";
+import { elearningUtm } from "@/config/elearning";
+import {
+  DIGITAL,
+  effectiveEbookPaise,
+  effectiveCoursePaise,
+  effectiveEbookUrl,
+  effectiveCourseUrl,
+} from "@/app/_lib/digital";
 import { formatRupees } from "@/lib/money";
 
 // Ebook / recorded-course upsell (§3, §15 item 7) — sits BELOW the primary CTA. Display +

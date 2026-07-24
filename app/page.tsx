@@ -6,8 +6,8 @@ import { Price } from "@/components/ui/price";
 import { Container } from "@/components/ui/container";
 import { stockStatus, stockTone, CornerRibbon } from "@/components/ui/stock-badge";
 import { examBadge } from "@/app/_lib/sku-view";
-import { DIGITAL, effectiveEbookPaise } from "@/app/_lib/digital";
-import { effectiveEbookUrl, elearningUtm } from "@/config/elearning";
+import { DIGITAL, effectiveEbookPaise, effectiveEbookUrl } from "@/app/_lib/digital";
+import { elearningUtm } from "@/config/elearning";
 import type { SkuCode } from "@/lib/catalogue";
 
 // Catalogue home (§15). SSR so live prices/availability show and this indexed URL keeps its
@@ -74,6 +74,35 @@ export default async function Home({
   );
 }
 
+// Shared catalogue-card chrome, so the Hardcopy and eBook grids stay pixel-identical.
+const CARD_CLASS =
+  "group relative flex flex-col overflow-hidden rounded-[14px] border border-lc-border bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(232,163,61,0.5)] hover:shadow-[0_12px_28px_rgba(14,59,46,0.1)]";
+
+// Gold hairline that wipes in on hover — restrained accent.
+function CardHairline() {
+  return (
+    <span className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-lc-gold transition-transform duration-300 group-hover:scale-x-100" />
+  );
+}
+
+function ExamChip({ code }: { code: string }) {
+  return (
+    <span className="inline-flex w-fit rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
+      {examBadge(code)}
+    </span>
+  );
+}
+
+// Price-row CTA pill; the label is the only thing that differs between the two formats.
+function CtaPill({ label }: { label: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-lc-border bg-lc-cream px-4 py-2 text-[13px] font-bold text-lc-green-800 transition-colors group-hover:border-lc-gold group-hover:bg-lc-gold group-hover:text-lc-on-gold">
+      {label}
+      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
+    </span>
+  );
+}
+
 function HardcopyGrid({ skus }: { skus: Sku[] }) {
   if (skus.length === 0) {
     return <p className="mt-8 text-lc-green-400">The catalogue is being updated. Please check back soon.</p>;
@@ -90,15 +119,12 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
           <Link
             key={sku.code}
             href={`/${sku.code}`}
-            className="group relative flex flex-col overflow-hidden rounded-[14px] border border-lc-border bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(232,163,61,0.5)] hover:shadow-[0_12px_28px_rgba(14,59,46,0.1)]"
+            className={CARD_CLASS}
           >
-            {/* Gold hairline that wipes in on hover — restrained accent. */}
-            <span className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-lc-gold transition-transform duration-300 group-hover:scale-x-100" />
+            <CardHairline />
             {showRibbon && <CornerRibbon />}
             <div className="flex items-start justify-between gap-2">
-              <span className="inline-flex w-fit rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
-                {examBadge(sku.code)}
-              </span>
+              <ExamChip code={sku.code} />
               {/* Edge pill — copy driven only by real stockQty. Hidden when the ribbon shows. */}
               {!showRibbon && (
                 <span
@@ -122,10 +148,7 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
                 <Price paise={sku.pricePaise} shippingIncluded={false} />
                 <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">shipping included</p>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-lc-border bg-lc-cream px-4 py-2 text-[13px] font-bold text-lc-green-800 transition-colors group-hover:border-lc-gold group-hover:bg-lc-gold group-hover:text-lc-on-gold">
-                View set
-                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
-              </span>
+              <CtaPill label="View set" />
             </div>
           </Link>
         );
@@ -165,13 +188,11 @@ function EbookGrid({ skus }: { skus: Sku[] }) {
               href={href + utm}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative flex flex-col overflow-hidden rounded-[14px] border border-lc-border bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(232,163,61,0.5)] hover:shadow-[0_12px_28px_rgba(14,59,46,0.1)]"
+              className={CARD_CLASS}
             >
-              <span className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-lc-gold transition-transform duration-300 group-hover:scale-x-100" />
+              <CardHairline />
               <div className="flex items-start justify-between gap-2">
-                <span className="inline-flex w-fit rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
-                  {examBadge(sku.code)}
-                </span>
+                <ExamChip code={sku.code} />
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[rgba(232,163,61,0.16)] px-2.5 py-1 text-[11.5px] font-bold text-lc-green-800">
                   <BookText className="h-3 w-3 shrink-0" aria-hidden />
                   eBook
@@ -184,10 +205,7 @@ function EbookGrid({ skus }: { skus: Sku[] }) {
                   <Price paise={effectiveEbookPaise(sku)} shippingIncluded={false} />
                   <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">1-year access</p>
                 </div>
-                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-lc-border bg-lc-cream px-4 py-2 text-[13px] font-bold text-lc-green-800 transition-colors group-hover:border-lc-gold group-hover:bg-lc-gold group-hover:text-lc-on-gold">
-                  Get eBook
-                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
-                </span>
+                <CtaPill label="Get eBook" />
               </div>
             </a>
           );

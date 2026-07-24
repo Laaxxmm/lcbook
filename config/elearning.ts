@@ -21,18 +21,8 @@ export const COURSE_URL: Partial<Record<SkuCode, string>> = {
   // CAT, CLAT — recorded course not yet launched.
 };
 
-// Effective outbound URLs (§3). The admin-editable DB value wins when set (non-empty after
-// trim); otherwise fall back to the config map above so nothing breaks. An empty result HIDES
-// that row/panel — never a dead link, never a price with no destination.
-type SkuUrls = { code: string; ebookUrl?: string | null; courseUrl?: string | null };
-
-export function effectiveEbookUrl(sku: SkuUrls): string | undefined {
-  return sku.ebookUrl?.trim() || EBOOK_URL[sku.code as SkuCode];
-}
-
-export function effectiveCourseUrl(sku: SkuUrls): string | undefined {
-  return sku.courseUrl?.trim() || COURSE_URL[sku.code as SkuCode];
-}
+// The DB-override-or-default resolvers for these URLs live in app/_lib/digital.ts, alongside
+// the digital price resolvers — one coherent place for every "effective" digital value (§3).
 
 // Append to any outbound e-learning URL. Include the order id where one exists.
 export function elearningUtm(orderId?: string): string {

@@ -52,6 +52,22 @@ function intField(fd: FormData, key: string): number | null {
   return Number.isInteger(n) ? n : null;
 }
 
+// Catalogue fields shared by create + edit (§14). Parses and validates in the same precedence
+// both actions used before; returns {error} on the first bad field, else the persisted shape.
+type CatalogueFields = { name: string; titles: string[]; bookCount: number; pricePaise: number; weightGrams: number };
+function parseCatalogueFields(fd: FormData): CatalogueFields | { error: string } {
+  const name = str(fd, "name");
+  const titles = str(fd, "titles").split(",").map((t) => t.trim()).filter(Boolean);
+  const bookCount = intField(fd, "bookCount");
+  const priceRupees = Number(str(fd, "priceRupees"));
+  const weightGrams = intField(fd, "weightGrams");
+  if (!name) return { error: "Name is required." };
+  if (bookCount === null || bookCount < 1) return { error: "Book count must be a whole number ≥ 1." };
+  if (!Number.isFinite(priceRupees) || priceRupees <= 0) return { error: "Price must be a positive number." };
+  if (weightGrams === null || weightGrams <= 0) return { error: "Weight (grams) must be a positive whole number." };
+  return { name, titles, bookCount, pricePaise: Math.round(priceRupees * 100), weightGrams };
+}
+
 function revalidateOrder(orderId: string): void {
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
@@ -187,23 +203,16 @@ export async function createSku(_prev: ActionState, fd: FormData): Promise<Actio
   if (g) return g;
 
   const code = str(fd, "code").toUpperCase();
-  const name = str(fd, "name");
-  const titles = str(fd, "titles").split(",").map((t) => t.trim()).filter(Boolean);
-  const bookCount = intField(fd, "bookCount");
-  const priceRupees = Number(str(fd, "priceRupees"));
-  const weightGrams = intField(fd, "weightGrams");
   const stockQty = intField(fd, "stockQty") ?? 0;
 
   if (!/^[A-Z0-9_]+$/.test(code)) return { error: "Code must be A–Z, 0–9 and underscores only." };
-  if (!name) return { error: "Name is required." };
-  if (bookCount === null || bookCount < 1) return { error: "Book count must be a whole number ≥ 1." };
-  if (!Number.isFinite(priceRupees) || priceRupees <= 0) return { error: "Price must be a positive number." };
-  if (weightGrams === null || weightGrams <= 0) return { error: "Weight (grams) must be a positive whole number." };
+  const fields = parseCatalogueFields(fd);
+  if ("error" in fields) return fields;
   if (stockQty < 0) return { error: "Stock can't be negative." };
 
   try {
     await prisma.sku.create({
-      data: { code, name, titles, bookCount, pricePaise: Math.round(priceRupees * 100), weightGrams, stockQty },
+      data: { code, ...fields, stockQty },
     });
     revalidatePath("/admin/skus");
     revalidatePath("/admin");
@@ -220,11 +229,6 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
   if (g) return g;
 
   const code = str(fd, "code");
-  const name = str(fd, "name");
-  const titles = str(fd, "titles").split(",").map((t) => t.trim()).filter(Boolean);
-  const bookCount = intField(fd, "bookCount");
-  const priceRupees = Number(str(fd, "priceRupees"));
-  const weightGrams = intField(fd, "weightGrams");
   // Outbound e-learning links (§3): optional, empty clears (falls back to config default);
   // if present must be an http(s) URL — never persist a dead link.
   const ebookUrl = str(fd, "ebookUrl");
@@ -240,10 +244,8 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
   const ebookPricePaise = toPaiseOrNull(str(fd, "ebookPriceRupees"));
   const coursePricePaise = toPaiseOrNull(str(fd, "coursePriceRupees"));
   if (!code) return { error: "Bad request." };
-  if (!name) return { error: "Name is required." };
-  if (bookCount === null || bookCount < 1) return { error: "Book count must be a whole number ≥ 1." };
-  if (!Number.isFinite(priceRupees) || priceRupees <= 0) return { error: "Price must be a positive number." };
-  if (weightGrams === null || weightGrams <= 0) return { error: "Weight (grams) must be a positive whole number." };
+  const fields = parseCatalogueFields(fd);
+  if ("error" in fields) return fields;
   if (badUrl(ebookUrl)) return { error: "eBook URL must start with http:// or https://" };
   if (badUrl(courseUrl)) return { error: "Course URL must start with http:// or https://" };
   if (ebookPricePaise === false) return { error: "eBook price must be a non-negative number." };
@@ -251,11 +253,7 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
 
   try {
     await updateSku(code, {
-      name,
-      titles,
-      bookCount,
-      pricePaise: Math.round(priceRupees * 100),
-      weightGrams,
+      ...fields,
       ebookUrl: ebookUrl || null,
       courseUrl: courseUrl || null,
       ebookPricePaise,

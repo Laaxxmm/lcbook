@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { CONSENT_TEXT } from "@/app/_lib/consent";
+import { formatRupees } from "@/lib/money";
 
 // All Indian States + Union Territories — native <select> so it stays mobile-friendly
 // with zero extra deps. Field name/value shape is unchanged (`state`).
@@ -95,10 +96,6 @@ function loadRazorpay(): Promise<boolean> {
 const inputCls =
   "w-full rounded-[10px] border border-lc-border bg-white px-3 py-2.5 text-[15px] text-lc-green-800 outline-none focus:border-lc-green-700 focus:ring-2 focus:ring-[rgba(14,59,46,0.15)]";
 const labelCls = "mb-1 block text-[13px] font-semibold text-lc-green-400";
-
-function rupees(paise: number): string {
-  return `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 export function CheckoutForm({ skuCode, setName, amountPaise, maxQty, initialQty }: CheckoutFormProps) {
   const [busy, setBusy] = useState(false);
@@ -192,8 +189,8 @@ export function CheckoutForm({ skuCode, setName, amountPaise, maxQty, initialQty
           <div className="flex flex-wrap items-center gap-3">
             <QuantityStepper value={qty} onChange={setQty} min={1} max={maxQty} />
             <span className="text-[13px] text-lc-green-400">
-              {rupees(amountPaise)} × {qty} ={" "}
-              <strong className="text-lc-green-800">{rupees(lineTotal)}</strong>
+              {formatRupees(amountPaise)} × {qty} ={" "}
+              <strong className="text-lc-green-800">{formatRupees(lineTotal)}</strong>
             </span>
           </div>
         </div>
@@ -289,7 +286,7 @@ export function CheckoutForm({ skuCode, setName, amountPaise, maxQty, initialQty
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lc-border bg-[rgba(250,247,242,0.95)] [backdrop-filter:blur(8px)] [box-shadow:0_-6px_20px_rgba(14,59,46,0.08)]">
         <div className="mx-auto flex max-w-container items-center gap-4 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="shrink-0 leading-tight">
-            <div className="text-[17px] font-extrabold tracking-tight text-lc-green-800">{rupees(lineTotal)}</div>
+            <div className="text-[17px] font-extrabold tracking-tight text-lc-green-800">{formatRupees(lineTotal)}</div>
             <div className="text-[11px] text-lc-green-400">
               {qty > 1 ? `${qty} sets · shipping included` : "shipping included"}
             </div>

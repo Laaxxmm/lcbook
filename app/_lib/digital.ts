@@ -1,4 +1,5 @@
 import type { SkuCode } from "@/lib/catalogue";
+import { EBOOK_URL, COURSE_URL } from "@/config/elearning";
 
 // Digital-product DISPLAY data (§3). These are sold on WiseApp, NOT here — display + redirect
 // only. VISIBILITY is driven by URL presence in config/elearning.ts, never by price:
@@ -23,15 +24,33 @@ export const DIGITAL: Record<SkuCode, DigitalInfo> = {
   CLAT: { ebookPaise: 89_900, ebookLabel: "eBook (1-year access)", coursePaise: 0 },
 };
 
-// Effective DISPLAY prices (§3, §4). The admin-editable DB value wins when set (non-null — 0 is a
-// valid price, so use ??, never ||); otherwise fall back to the DIGITAL map above so nothing breaks.
-// DISPLAY + redirect only — these never touch a real Order amount, Razorpay charge, or invoice.
-type SkuPrices = { code: string; ebookPricePaise?: number | null; coursePricePaise?: number | null };
+// Effective DISPLAY values (§3, §4) — the single place that resolves "DB override or config
+// default" for every digital field. DISPLAY + redirect only; these never touch a real Order
+// amount, Razorpay charge, or invoice.
+//   URLs   → admin value wins when non-empty after trim (|| — "" means "use the default");
+//            an empty result HIDES that row/panel, never a dead link.
+//   Prices → admin value wins when non-null (?? — 0 is a valid price, e.g. CAT/CLAT course);
+//            otherwise fall back to the DIGITAL map above.
+type SkuEffective = {
+  code: string;
+  ebookUrl?: string | null;
+  courseUrl?: string | null;
+  ebookPricePaise?: number | null;
+  coursePricePaise?: number | null;
+};
 
-export function effectiveEbookPaise(sku: SkuPrices): number {
+export function effectiveEbookUrl(sku: SkuEffective): string | undefined {
+  return sku.ebookUrl?.trim() || EBOOK_URL[sku.code as SkuCode];
+}
+
+export function effectiveCourseUrl(sku: SkuEffective): string | undefined {
+  return sku.courseUrl?.trim() || COURSE_URL[sku.code as SkuCode];
+}
+
+export function effectiveEbookPaise(sku: SkuEffective): number {
   return sku.ebookPricePaise ?? DIGITAL[sku.code as SkuCode]?.ebookPaise ?? 0;
 }
 
-export function effectiveCoursePaise(sku: SkuPrices): number {
+export function effectiveCoursePaise(sku: SkuEffective): number {
   return sku.coursePricePaise ?? DIGITAL[sku.code as SkuCode]?.coursePaise ?? 0;
 }
