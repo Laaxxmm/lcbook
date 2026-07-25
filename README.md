@@ -132,12 +132,12 @@ Add these at Hostinger (hPanel → DNS Zone for `learncrew.org`). Hostinger's "N
 
 > ### ⚠️ SINGLE-SPF WARNING — only ONE SPF (`v=spf1…`) TXT record may exist per hostname.
 > The sender's SPF above lives on **`send.txn.learncrew.org`**, so it does not collide with the
-> root `learncrew.org` SPF. **But** `support@learncrew.org` is Google Workspace, so the **root
-> `learncrew.org` already has an SPF record** (`v=spf1 include:_spf.google.com ~all`). Never add a
-> second SPF TXT anywhere that already has one — **two SPF records on the same host makes both
-> fail and all mail from it goes unauthenticated.** If you ever move sending to the root instead of
-> the `txn` subdomain, you must **merge** the includes into the one existing record, e.g.
-> `v=spf1 include:_spf.google.com include:amazonses.com ~all` — not add a second line.
+> root `learncrew.org` SPF. **But** `support@learncrew.org` is on **Microsoft 365 (Outlook)**, so the
+> **root `learncrew.org` already has an SPF record** (`v=spf1 include:spf.protection.outlook.com -all`).
+> Never add a second SPF TXT anywhere that already has one — **two SPF records on the same host makes
+> both fail and all mail from it goes unauthenticated.** If you ever move sending to the root instead
+> of the `txn` subdomain, you must **merge** the includes into the one existing record, e.g.
+> `v=spf1 include:spf.protection.outlook.com include:amazonses.com -all` — not add a second line.
 
 After the records propagate, click **Verify** in Resend. Send a test from the app (any order
 confirmation) and confirm SPF + DKIM = pass in the received headers.
