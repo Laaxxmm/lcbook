@@ -10,8 +10,11 @@ import { ADMIN_COOKIE, adminSessionValue, isAdminEmail } from "@/app/admin/_lib/
 export const runtime = "nodejs";
 
 export async function GET(req: Request): Promise<Response> {
+  // Redirect against the PUBLIC origin (APP_URL). Behind Railway's proxy `req.url` is the
+  // internal host (localhost:8080), so redirecting to it sends the browser to a dead address.
+  const base = process.env.APP_URL || new URL(req.url).origin;
   const token = new URL(req.url).searchParams.get("token");
-  const fail = NextResponse.redirect(new URL("/admin/login?error=1", req.url));
+  const fail = NextResponse.redirect(new URL("/admin/login?error=1", base));
   if (!token) return fail;
 
   const uid = await verifyMagicLink(token);
@@ -19,7 +22,7 @@ export async function GET(req: Request): Promise<Response> {
   const user = await prisma.user.findUnique({ where: { id: uid } });
   if (!user || !isAdminEmail(user.email)) return fail;
 
-  const res = NextResponse.redirect(new URL("/admin", req.url));
+  const res = NextResponse.redirect(new URL("/admin", base));
   res.cookies.set(ADMIN_COOKIE, adminSessionValue(user.id), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
