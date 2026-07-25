@@ -11,6 +11,37 @@ import { sendAdminMail, para, linkButton } from "@/app/admin/_lib/mail";
 // the admin address. The link lands on /api/admin/verify which sets the lc_admin cookie.
 export const runtime = "nodejs";
 
+// Bootstrap ONLY (ADMIN_LOGIN_DEBUG=true): GET returns the single-use sign-in URL straight in the
+// browser — no email, no log-scraping — or the actual error (e.g. a broken DB connection) so the
+// blocker is visible. 404 unless the flag is on. Turn the flag off once Resend email works.
+export async function GET(req: Request): Promise<Response> {
+  if (process.env.ADMIN_LOGIN_DEBUG !== "true") {
+    return new NextResponse("Not found", { status: 404 });
+  }
+  const email = (new URL(req.url).searchParams.get("email") ?? "").trim().toLowerCase();
+  if (!isAdminEmail(email)) {
+    return new NextResponse(
+      `Email "${email || "(none)"}" is not the admin address. Set ?email= to your ADMIN_EMAIL.`,
+      { status: 403 },
+    );
+  }
+  try {
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: { email, name: "Admin" },
+    });
+    const token = await issueMagicLink(user.id);
+    const url = `${process.env.APP_URL ?? ""}/api/admin/verify?token=${encodeURIComponent(token)}`;
+    return new NextResponse(`Open this to sign in (single-use, 15 min):\n\n${url}\n`, {
+      status: 200,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  } catch (err) {
+    return new NextResponse(`DB/error while minting the link:\n${String(err)}`, { status: 500 });
+  }
+}
+
 const Body = z.object({ email: z.string().trim().email() });
 
 export async function POST(req: Request): Promise<Response> {
