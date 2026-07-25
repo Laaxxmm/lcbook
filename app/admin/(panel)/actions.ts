@@ -233,6 +233,7 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
   // if present must be an http(s) URL — never persist a dead link.
   const ebookUrl = str(fd, "ebookUrl");
   const courseUrl = str(fd, "courseUrl");
+  const mockUrl = str(fd, "mockUrl");
   const badUrl = (u: string) => u !== "" && !/^https?:\/\/\S+$/i.test(u);
   // DISPLAY-only digital prices (§3/§4): optional rupees → integer paise; empty clears (falls back
   // to the DIGITAL default). Non-negative (0 is valid — CAT/CLAT course). Returns false if invalid.
@@ -243,21 +244,26 @@ export async function editSku(_prev: ActionState, fd: FormData): Promise<ActionS
   };
   const ebookPricePaise = toPaiseOrNull(str(fd, "ebookPriceRupees"));
   const coursePricePaise = toPaiseOrNull(str(fd, "coursePriceRupees"));
+  const mockPricePaise = toPaiseOrNull(str(fd, "mockPriceRupees"));
   if (!code) return { error: "Bad request." };
   const fields = parseCatalogueFields(fd);
   if ("error" in fields) return fields;
   if (badUrl(ebookUrl)) return { error: "eBook URL must start with http:// or https://" };
   if (badUrl(courseUrl)) return { error: "Course URL must start with http:// or https://" };
+  if (badUrl(mockUrl)) return { error: "Mock URL must start with http:// or https://" };
   if (ebookPricePaise === false) return { error: "eBook price must be a non-negative number." };
   if (coursePricePaise === false) return { error: "Course price must be a non-negative number." };
+  if (mockPricePaise === false) return { error: "Mock price must be a non-negative number." };
 
   try {
     await updateSku(code, {
       ...fields,
       ebookUrl: ebookUrl || null,
       courseUrl: courseUrl || null,
+      mockUrl: mockUrl || null,
       ebookPricePaise,
       coursePricePaise,
+      mockPricePaise,
     });
     revalidatePath("/admin/skus");
     revalidatePath(`/admin/skus/${code}`);

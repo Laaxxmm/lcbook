@@ -1,13 +1,15 @@
 import type { Sku } from "@prisma/client";
-import { ArrowRight, BookText, Play, type LucideIcon } from "lucide-react";
+import { ArrowRight, BookText, ClipboardCheck, Play, type LucideIcon } from "lucide-react";
 import type { SkuCode } from "@/lib/catalogue";
 import { elearningUtm } from "@/config/elearning";
 import {
   DIGITAL,
   effectiveEbookPaise,
   effectiveCoursePaise,
+  effectiveMockPaise,
   effectiveEbookUrl,
   effectiveCourseUrl,
+  effectiveMockUrl,
 } from "@/app/_lib/digital";
 import { formatRupees } from "@/lib/money";
 
@@ -58,7 +60,8 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
   const d = DIGITAL[sku.code as SkuCode];
   const ebookHref = effectiveEbookUrl(sku);
   const courseHref = effectiveCourseUrl(sku);
-  if (!d || (!ebookHref && !courseHref)) return null; // both missing → no panel
+  const mockHref = effectiveMockUrl(sku);
+  if (!d || (!ebookHref && !courseHref)) return null; // no ebook/course → no panel (mocks alone show on the storefront Mocks tab)
 
   const utm = elearningUtm();
 
@@ -81,6 +84,15 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
             note='1-year access. Opens as a "course" on WiseApp — this is the eBook, not a wrong link.'
             href={ebookHref + utm}
             cta="Get the eBook"
+          />
+        )}
+        {mockHref && (
+          <OutboundRow
+            Icon={ClipboardCheck}
+            title={`${d.mockLabel} — ${formatRupees(effectiveMockPaise(sku))}`}
+            note="1-year access. Opens on our learning platform."
+            href={mockHref + utm}
+            cta="Get the mocks"
           />
         )}
         {courseHref ? (

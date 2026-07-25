@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { prisma } from "../lib/db";
 import { SKU_CATALOGUE } from "../lib/catalogue";
-import { EBOOK_URL, COURSE_URL } from "../config/elearning";
+import { EBOOK_URL, COURSE_URL, MOCKS_URL } from "../config/elearning";
 import { DIGITAL } from "../app/_lib/digital";
 
 // Seed the 5 physical book sets (spec §3). Idempotent: safe to re-run.
@@ -12,8 +12,10 @@ async function main() {
   for (const s of SKU_CATALOGUE) {
     const ebookUrl = EBOOK_URL[s.code] ?? null;
     const courseUrl = COURSE_URL[s.code] ?? null;
+    const mockUrl = MOCKS_URL[s.code] ?? null;
     const ebookPricePaise = DIGITAL[s.code]?.ebookPaise ?? null;
     const coursePricePaise = DIGITAL[s.code]?.coursePaise ?? null;
+    const mockPricePaise = DIGITAL[s.code]?.mockPaise ?? null;
     await prisma.sku.upsert({
       where: { code: s.code },
       update: {
@@ -24,8 +26,10 @@ async function main() {
         weightGrams: s.weightGrams,
         ebookUrl,
         courseUrl,
+        mockUrl,
         ebookPricePaise,
         coursePricePaise,
+        mockPricePaise,
       },
       create: {
         code: s.code,
@@ -37,8 +41,10 @@ async function main() {
         stockQty: 0,
         ebookUrl,
         courseUrl,
+        mockUrl,
         ebookPricePaise,
         coursePricePaise,
+        mockPricePaise,
       },
     });
     console.log(`seeded ${s.code} — ${s.name}`);

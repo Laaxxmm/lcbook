@@ -70,10 +70,12 @@ model Sku {
   // Outbound e-learning links (§3). Admin-editable; empty/null falls back to config/elearning.ts.
   ebookUrl        String?
   courseUrl       String?
+  mockUrl         String?
   // DISPLAY-only digital prices (§3), integer paise (§4). Admin-editable; null falls back to the
   // DIGITAL map in app/_lib/digital.ts. NEVER affects a real Order amount, Razorpay charge, or invoice.
   ebookPricePaise  Int?
   coursePricePaise Int?
+  mockPricePaise   Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

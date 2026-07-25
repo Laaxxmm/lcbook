@@ -15,9 +15,11 @@ export interface SkuChanges {
   // Outbound e-learning links (§3). Pass "" to clear (falls back to config default).
   ebookUrl?: string | null;
   courseUrl?: string | null;
+  mockUrl?: string | null;
   // DISPLAY-only digital prices (§3), integer paise (§4). null clears (falls back to DIGITAL default).
   ebookPricePaise?: number | null;
   coursePricePaise?: number | null;
+  mockPricePaise?: number | null;
 }
 
 function serialise(v: unknown): string {

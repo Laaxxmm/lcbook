@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatRupees } from "@/lib/money";
-import { effectiveEbookPaise, effectiveCoursePaise } from "@/app/_lib/digital";
+import { effectiveEbookPaise, effectiveCoursePaise, effectiveMockPaise } from "@/app/_lib/digital";
 import { PageHeader, Card, TableWrap, Th, Td } from "@/components/admin/ui";
 import { ActionForm, inputCls } from "@/components/admin/action-form";
 import { ActionButton } from "@/components/admin/action-button";
@@ -52,7 +52,11 @@ export default async function SkuEditPage({ params }: { params: Promise<{ code: 
                 Course URL (optional — empty uses the default)
                 <input name="courseUrl" type="url" inputMode="url" placeholder="https://elearning.learncrew.org/…" defaultValue={sku.courseUrl ?? ""} className={inputCls} />
               </label>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <label className="grid gap-1 text-[13px] font-semibold text-lc-green-400">
+                Mock URL (optional — empty uses the default)
+                <input name="mockUrl" type="url" inputMode="url" placeholder="https://elearning.learncrew.org/…" defaultValue={sku.mockUrl ?? ""} className={inputCls} />
+              </label>
+              <div className="grid gap-2 sm:grid-cols-3">
                 <label className="grid gap-1 text-[13px] font-semibold text-lc-green-400">
                   eBook price (₹) — display only, empty uses the default
                   <input name="ebookPriceRupees" type="number" min={0} step="1" defaultValue={effectiveEbookPaise(sku) / 100} className={inputCls} />
@@ -60,6 +64,10 @@ export default async function SkuEditPage({ params }: { params: Promise<{ code: 
                 <label className="grid gap-1 text-[13px] font-semibold text-lc-green-400">
                   Course price (₹) — display only, empty uses the default
                   <input name="coursePriceRupees" type="number" min={0} step="1" defaultValue={effectiveCoursePaise(sku) / 100} className={inputCls} />
+                </label>
+                <label className="grid gap-1 text-[13px] font-semibold text-lc-green-400">
+                  Mock price (₹) — display only, empty uses the default
+                  <input name="mockPriceRupees" type="number" min={0} step="1" defaultValue={effectiveMockPaise(sku) / 100} className={inputCls} />
                 </label>
               </div>
               <div className="grid gap-2 sm:grid-cols-3">

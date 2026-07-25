@@ -1,12 +1,18 @@
 import Link from "next/link";
 import type { Sku } from "@prisma/client";
-import { ArrowRight, BookOpen, BookText, Package } from "lucide-react";
+import { ArrowRight, BookOpen, BookText, ClipboardCheck, Package } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { Price } from "@/components/ui/price";
 import { Container } from "@/components/ui/container";
 import { stockStatus, stockTone, CornerRibbon } from "@/components/ui/stock-badge";
 import { examBadge } from "@/app/_lib/sku-view";
-import { DIGITAL, effectiveEbookPaise, effectiveEbookUrl } from "@/app/_lib/digital";
+import {
+  DIGITAL,
+  effectiveEbookPaise,
+  effectiveEbookUrl,
+  effectiveMockPaise,
+  effectiveMockUrl,
+} from "@/app/_lib/digital";
 import { elearningUtm } from "@/config/elearning";
 import type { SkuCode } from "@/lib/catalogue";
 
@@ -21,6 +27,7 @@ export const dynamic = "force-dynamic";
 const TABS = [
   { key: "hardcopy", label: "Hardcopy", href: "/", Icon: Package },
   { key: "ebook", label: "eBook", href: "/?tab=ebook", Icon: BookText },
+  { key: "mocks", label: "Mocks", href: "/?tab=mocks", Icon: ClipboardCheck },
 ] as const;
 
 export default async function Home({
@@ -29,7 +36,7 @@ export default async function Home({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab } = await searchParams;
-  const active = tab === "ebook" ? "ebook" : "hardcopy";
+  const active = tab === "ebook" ? "ebook" : tab === "mocks" ? "mocks" : "hardcopy";
   const skus = await prisma.sku.findMany({ where: { active: true }, orderBy: { pricePaise: "asc" } });
 
   return (
@@ -69,7 +76,13 @@ export default async function Home({
         })}
       </div>
 
-      {active === "hardcopy" ? <HardcopyGrid skus={skus} /> : <EbookGrid skus={skus} />}
+      {active === "hardcopy" ? (
+        <HardcopyGrid skus={skus} />
+      ) : active === "ebook" ? (
+        <EbookGrid skus={skus} />
+      ) : (
+        <MocksGrid skus={skus} />
+      )}
     </Container>
   );
 }
@@ -206,6 +219,64 @@ function EbookGrid({ skus }: { skus: Sku[] }) {
                   <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">1-year access</p>
                 </div>
                 <CtaPill label="Get eBook" />
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function MocksGrid({ skus }: { skus: Sku[] }) {
+  // §3: display + redirect only, and a MISSING URL hides that item entirely (no dead links,
+  // no price with no destination). Only SKUs with an effective mock URL appear here.
+  const items = skus
+    .map((s) => ({ sku: s, href: effectiveMockUrl(s) }))
+    .filter((x): x is { sku: Sku; href: string } => Boolean(x.href));
+  const utm = elearningUtm();
+
+  if (items.length === 0) {
+    return (
+      <p className="mt-8 text-[15px] text-lc-green-400">
+        Mocks are being published on our learning platform. Please check back soon.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <p className="mt-6 text-[13px] text-lc-green-400">
+        Mocks open on our learning platform (1-year access). Digital products are{" "}
+        <strong>non-refundable</strong>, and a Hardcopy set doesn&apos;t include digital access.
+      </p>
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map(({ sku, href }) => {
+          const d = DIGITAL[sku.code as SkuCode];
+          return (
+            <a
+              key={sku.code}
+              href={href + utm}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={CARD_CLASS}
+            >
+              <CardHairline />
+              <div className="flex items-start justify-between gap-2">
+                <ExamChip code={sku.code} />
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[rgba(232,163,61,0.16)] px-2.5 py-1 text-[11.5px] font-bold text-lc-green-800">
+                  <ClipboardCheck className="h-3 w-3 shrink-0" aria-hidden />
+                  Mocks
+                </span>
+              </div>
+              <h2 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h2>
+              <p className="mt-1 text-[13px] text-lc-green-400">{d.mockLabel}</p>
+              <div className="mt-4 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <Price paise={effectiveMockPaise(sku)} shippingIncluded={false} />
+                  <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">1-year access</p>
+                </div>
+                <CtaPill label="Get mocks" />
               </div>
             </a>
           );

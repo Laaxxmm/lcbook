@@ -14,6 +14,10 @@ export const EBOOK_URL: Partial<Record<SkuCode, string>> = {
   // MAT — not yet published on WiseApp.
 };
 
+// Outbound Mocks links (§3), mirror of EBOOK_URL. Empty for now — admin fills links per SKU;
+// a missing URL hides that SKU's Mocks card entirely (never a dead link).
+export const MOCKS_URL: Partial<Record<SkuCode, string>> = {};
+
 export const COURSE_URL: Partial<Record<SkuCode, string>> = {
   PGCET_MBA: `${ELEARNING_BASE}/courses/post-graduation-common-entrance-test-mba-67b48880dce76a43183438f6`,
   PGCET_MCA: `${ELEARNING_BASE}/courses/post-graduation-common-entrance-test-mca-67b48a8b0e2e2fc50fdd9f25`,
