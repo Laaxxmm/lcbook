@@ -44,16 +44,24 @@ const schema = z.object({
   GATEWAY_FEE_RATE: z.coerce.number().positive().default(0.0236),
 });
 
-function load(): z.infer<typeof schema> {
+export type Env = z.infer<typeof schema>;
+
+function load(): Env {
   const parsed = schema.safeParse(process.env);
-  if (!parsed.success) {
-    const issues = parsed.error.issues
-      .map((i) => `  ${i.path.join(".") || "(root)"}: ${i.message}`)
-      .join("\n");
-    throw new Error(`Invalid environment variables:\n${issues}`);
+  if (parsed.success) return parsed.data;
+
+  // `next build` collects page data (e.g. /_not-found) BEFORE runtime env is present —
+  // Railway (and most hosts) inject service vars at deploy/run, not necessarily at build.
+  // Don't fail the build on missing vars; the real validation runs at request time below,
+  // where NEXT_PHASE is unset, so a genuinely misconfigured server still fails loudly.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return process.env as unknown as Env;
   }
-  return parsed.data;
+
+  const issues = parsed.error.issues
+    .map((i) => `  ${i.path.join(".") || "(root)"}: ${i.message}`)
+    .join("\n");
+  throw new Error(`Invalid environment variables:\n${issues}`);
 }
 
 export const env = load();
-export type Env = typeof env;

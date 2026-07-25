@@ -25,7 +25,9 @@ const jakarta = Plus_Jakarta_Sans({
 
 // This store replaces an indexed WordPress site — SEO defaults matter (§15, §16).
 export const metadata: Metadata = {
-  metadataBase: new URL(env.APP_URL),
+  // Fallback keeps `next build` from crashing when APP_URL isn't injected yet (build phase);
+  // runtime uses the real APP_URL. Mirrors sitemap.ts / robots.ts.
+  metadataBase: new URL(env.APP_URL || "https://publications.learncrew.org"),
   title: {
     default: "Learn Crew Publications — entrance-exam book sets",
     template: "%s · Learn Crew Publications",
