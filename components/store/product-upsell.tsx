@@ -81,7 +81,7 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
           <OutboundRow
             Icon={BookText}
             title={`${d.ebookLabel} — ${formatRupees(effectiveEbookPaise(sku))}`}
-            note='1-year access. Opens as a "course" on WiseApp — this is the eBook, not a wrong link.'
+            note="1-year access. Opens on our learning platform."
             href={ebookHref + utm}
             cta="Get the eBook"
           />

@@ -6,9 +6,8 @@ import { EBOOK_URL, COURSE_URL, MOCKS_URL } from "@/config/elearning";
 //   - missing EBOOK_URL  → hide the ebook row (MAT)
 //   - missing COURSE_URL → "recorded course coming soon", no price, no CTA (CAT, CLAT)
 //   - both missing       → hide the whole upsell panel
-// Two known catalogue defects are honoured, not papered over:
-//   1. PGCET MBA + MCA share one WiseApp destination → a single PGCET ebook price per SKU.
-//   2. That destination is "PGCET Mocks", not "eBooks" → labelled for what the buyer lands on.
+// eBook, Mocks and Course are three SEPARATE products now, each with its own admin-editable
+// URL + price per SKU (config values here are only fallbacks/defaults). Labels are generic.
 // Mirrors lib/email's DIGITAL map (that one is not exported; this is the public-page copy).
 export interface DigitalInfo {
   ebookPaise: number;
@@ -21,8 +20,8 @@ export interface DigitalInfo {
 
 const MOCK_LABEL = "Mock tests (1-year access)";
 export const DIGITAL: Record<SkuCode, DigitalInfo> = {
-  PGCET_MBA: { ebookPaise: 29_900, ebookLabel: "PGCET Mocks + eBook", coursePaise: 400_000, mockLabel: MOCK_LABEL },
-  PGCET_MCA: { ebookPaise: 34_900, ebookLabel: "PGCET Mocks + eBook", coursePaise: 400_000, mockLabel: MOCK_LABEL },
+  PGCET_MBA: { ebookPaise: 29_900, ebookLabel: "eBook (1-year access)", coursePaise: 400_000, mockLabel: MOCK_LABEL },
+  PGCET_MCA: { ebookPaise: 34_900, ebookLabel: "eBook (1-year access)", coursePaise: 400_000, mockLabel: MOCK_LABEL },
   MAT: { ebookPaise: 34_900, ebookLabel: "eBook (1-year access)", coursePaise: 500_000, mockLabel: MOCK_LABEL },
   CAT: { ebookPaise: 89_900, ebookLabel: "eBook (1-year access)", coursePaise: 0, mockLabel: MOCK_LABEL },
   CLAT: { ebookPaise: 89_900, ebookLabel: "eBook (1-year access)", coursePaise: 0, mockLabel: MOCK_LABEL },

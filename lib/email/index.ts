@@ -63,8 +63,8 @@ const FONT = "'Plus Jakarta Sans',system-ui,-apple-system,sans-serif";
 // config/elearning.ts — never by price. The PGCET ebook destination is the "PGCET
 // Mocks" product, so label it for what the buyer actually lands on (§3 defect 2).
 const DIGITAL: Record<SkuCode, { ebookPaise: number; ebookLabel: string; coursePaise: number }> = {
-  PGCET_MBA: { ebookPaise: 29_900, ebookLabel: "PGCET Mocks + eBook", coursePaise: 400_000 },
-  PGCET_MCA: { ebookPaise: 34_900, ebookLabel: "PGCET Mocks + eBook", coursePaise: 400_000 },
+  PGCET_MBA: { ebookPaise: 29_900, ebookLabel: "eBook (1-year access)", coursePaise: 400_000 },
+  PGCET_MCA: { ebookPaise: 34_900, ebookLabel: "eBook (1-year access)", coursePaise: 400_000 },
   MAT: { ebookPaise: 34_900, ebookLabel: "eBook (1-year access)", coursePaise: 500_000 },
   CAT: { ebookPaise: 89_900, ebookLabel: "eBook (1-year access)", coursePaise: 0 },
   CLAT: { ebookPaise: 89_900, ebookLabel: "eBook (1-year access)", coursePaise: 0 },
