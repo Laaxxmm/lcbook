@@ -39,7 +39,7 @@ export default async function ShippingLabelPage({ params }: { params: Promise<{ 
         {/* FROM — return address (seller §2) */}
         <div className="border-b border-lc-border pb-3 text-[12px] leading-snug text-lc-green-400">
           <div className="text-[11px] font-bold uppercase tracking-wide">From</div>
-          <div className="mt-0.5 font-semibold text-lc-green-800">{SELLER.name}</div>
+          <div className="mt-0.5 font-semibold text-lc-green-800">{SELLER.displayName}</div>
           {SELLER.address.map((line) => (
             <div key={line}>{line}</div>
           ))}

@@ -2,8 +2,11 @@ import type { Order, Prisma } from "@prisma/client";
 import { GST_ENABLED } from "@/lib/money";
 
 // Seller block (spec §2). GSTIN: none (GST_ENABLED = false).
+// `name` = registered legal entity (kept on legal docs: Bill of Supply, Terms operator clause).
+// `displayName` = brand shown everywhere on the site (footer, contact, label, email).
 export const SELLER = {
   name: "Learncrew Talent Pvt Ltd",
+  displayName: "Learn Crew Publications",
   address: [
     "No 57, Nandanam Layout, Nisarga Colony, 13th C Cross,",
     "9th Cross, 10th Main Rd, Horamavu, Bengaluru 560043",

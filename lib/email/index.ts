@@ -90,7 +90,7 @@ function layout(opts: { preheader: string; heading: string; body: string }): str
     ${opts.body}
   </td></tr>
   <tr><td style="padding:20px 24px;color:${C.green400};font-size:12px;line-height:1.6">
-    <div style="font-weight:600;color:${C.green800}">${esc(SELLER.name)}</div>
+    <div style="font-weight:600;color:${C.green800}">${esc(SELLER.displayName)}</div>
     ${SELLER.address.map((l) => `<div>${esc(l)}</div>`).join("")}
     <div style="margin-top:6px">Questions? Reply to this email or write to <a href="mailto:${SELLER.email}" style="color:${C.green800}">${SELLER.email}</a> · ${esc(SELLER.phone)}</div>
   </td></tr>

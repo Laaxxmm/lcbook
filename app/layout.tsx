@@ -122,9 +122,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="mt-5 max-w-md">
-              <div className="text-[15px] font-bold tracking-tight">{SELLER.name}</div>
-
-              <div className="mt-3 flex items-start gap-2.5 text-sm leading-relaxed text-lc-cream/80">
+              <div className="flex items-start gap-2.5 text-sm leading-relaxed text-lc-cream/80">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-lc-gold" aria-hidden />
                 <span>{DISPLAY_ADDRESS}</span>
               </div>

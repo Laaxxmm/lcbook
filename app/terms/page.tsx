@@ -9,7 +9,7 @@ export default function TermsPage() {
   return (
     <LegalPage title="Terms & Conditions" updated="24 July 2026">
       <P>
-        This store is operated by {SELLER.name}, {SELLER.address.join(" ")}. By placing an order you
+        This store is operated by {SELLER.displayName}, {SELLER.address.join(" ")}. By placing an order you
         agree to these terms. Questions? Write to{" "}
         <a href={`mailto:${SELLER.email}`} className="font-semibold text-lc-green-700 underline underline-offset-4">{SELLER.email}</a>{" "}
         or call {SELLER.phone}.

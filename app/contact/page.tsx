@@ -11,7 +11,7 @@ export default function ContactPage() {
     <LegalPage title="Contact us" updated="24 July 2026">
       <P>We&apos;re a small team in Bengaluru and we answer every message.</P>
 
-      <H2>{SELLER.name}</H2>
+      <H2>{SELLER.displayName}</H2>
       <P>{SELLER.address.join(", ")}</P>
 
       <H2>Reach us</H2>
