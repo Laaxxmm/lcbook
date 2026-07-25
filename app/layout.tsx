@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
-import { Library, Truck, Mail, Phone, MapPin } from "lucide-react";
+import { Library, Truck, Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
 import "./globals.css";
 import { env } from "@/lib/env";
 import { SELLER } from "@/lib/invoice";
@@ -146,6 +146,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 {SELLER.phone}
               </a>
             </div>
+
+            {/* Cross-link back to the main site — live online classes live on learncrew.org. */}
+            <a
+              href="https://learncrew.org"
+              className="mt-6 inline-flex items-center gap-2 rounded-full border border-lc-gold/40 bg-lc-gold/10 px-4 py-2.5 text-[13.5px] font-bold text-lc-cream transition-colors hover:bg-lc-gold/20"
+            >
+              Looking for live online classes? Visit learncrew.org
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-lc-gold" aria-hidden />
+            </a>
 
             {/* Policy links — horizontal strip along the bottom, wraps on mobile. */}
             <nav className="mt-8 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-lc-cream/15 pt-6 text-[13px]">
