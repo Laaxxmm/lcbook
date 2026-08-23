@@ -30,7 +30,7 @@ function formatRs(paise: number): string {
 // e.g. "24 JUL 2026".
 function formatDate(date: Date | string): string {
   return new Date(date)
-    .toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+    .toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })
     .toUpperCase();
 }
 

@@ -113,7 +113,7 @@ export default async function OrdersPage({
                   <div className="text-[12px] text-lc-green-400">{o.city}, {o.state}</div>
                 </Td>
                 <Td className="whitespace-nowrap text-[13px] text-lc-green-400">
-                  {o.createdAt.toLocaleDateString("en-IN")}
+                  {o.createdAt.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
                 </Td>
               </tr>
             ))}

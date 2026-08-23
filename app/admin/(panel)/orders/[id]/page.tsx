@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 function dt(d: Date): string {
-  return d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+  return d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 }
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {

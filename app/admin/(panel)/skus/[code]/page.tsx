@@ -146,7 +146,7 @@ export default async function SkuEditPage({ params }: { params: Promise<{ code: 
                 <Td className="text-lc-green-400">{a.oldValue ?? "—"}</Td>
                 <Td>{a.newValue ?? "—"}</Td>
                 <Td className="whitespace-nowrap text-[13px] text-lc-green-400">
-                  {a.changedAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                  {a.changedAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}
                 </Td>
               </tr>
             ))}
