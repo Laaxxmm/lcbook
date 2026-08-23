@@ -7,21 +7,37 @@ import { SHIPPING_RATE_PER_KG_PAISE } from "@/config/pricing";
 import { PageHeader, Card } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/admin/status-badge";
 
+// Statuses where payment has been collected (money in) — whether confirmed by the Razorpay
+// webhook or advanced manually by an admin. Excludes pending/failed/cancelled/refunded.
+const PAID_STATUSES: OrderStatus[] = [
+  OrderStatus.PAID,
+  OrderStatus.CONFIRMED,
+  OrderStatus.PICKING,
+  OrderStatus.PACKED,
+  OrderStatus.SHIPPED,
+  OrderStatus.DELIVERED,
+  OrderStatus.PRINT_QUEUED,
+  OrderStatus.PRINT_STARTED,
+  OrderStatus.PRINT_DONE,
+  OrderStatus.RTO,
+  OrderStatus.DAMAGE_REPLACEMENT,
+];
+
 // Admin dashboard (§14): the things that need a human — flags, cancellations, print queue,
 // failed sheet syncs — plus a recent-orders glance.
 export default async function DashboardPage() {
   const [received, paid, pending, shipped, completed, revenueAgg, shipWeightAgg, flagged, cancellations, printQueue, pendingSheet, recent] =
     await Promise.all([
       prisma.order.count(),
-      // Paid = payment captured (money in), regardless of later fulfilment/cancellation.
-      prisma.order.count({ where: { razorpayPaymentId: { not: null } } }),
+      // Paid = money collected (status-based, so manual admin confirms count too).
+      prisma.order.count({ where: { status: { in: PAID_STATUSES } } }),
       // Pending = still awaiting payment.
       prisma.order.count({ where: { status: { in: [OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING] } } }),
       // Shipped = dispatched (AWB entered → dispatchedAt set), incl. delivered/RTO.
       prisma.order.count({ where: { dispatchedAt: { not: null } } }),
       prisma.order.count({ where: { status: OrderStatus.DELIVERED } }),
-      // Total revenue = sum of captured order amounts (paise).
-      prisma.order.aggregate({ _sum: { amountPaise: true }, where: { razorpayPaymentId: { not: null } } }),
+      // Total revenue = sum of collected order amounts (paise), status-based.
+      prisma.order.aggregate({ _sum: { amountPaise: true }, where: { status: { in: PAID_STATUSES } } }),
       // Shipping-cost estimate basis: total dispatched weight (snapshot grams).
       prisma.order.aggregate({ _sum: { snapshotWeightGrams: true }, where: { dispatchedAt: { not: null } } }),
       prisma.order.count({ where: { OR: [{ amountMismatchFlagged: true }, { refundStatus: "FAILED" }] } }),
@@ -40,7 +56,7 @@ export default async function DashboardPage() {
 
   const kpis = [
     { href: "/admin/orders", label: "Orders received", value: received },
-    { href: "/admin/orders?status=PAID", label: "Paid", value: paid },
+    { href: "/admin/orders", label: "Paid", value: paid },
     { href: "/admin/orders?status=PAYMENT_PENDING", label: "Pending payment", value: pending },
     { href: "/admin/orders?status=SHIPPED", label: "Shipped", value: shipped },
     { href: "/admin/orders?status=DELIVERED", label: "Completed", value: completed },
