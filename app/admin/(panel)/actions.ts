@@ -75,6 +75,8 @@ function revalidateOrder(orderId: string): void {
   revalidatePath("/admin/print-queue");
   revalidatePath("/admin/cancellations");
   revalidatePath("/admin/flagged");
+  // Push the just-enqueued sheet update(s) now — non-blocking; failures record per-job (§10).
+  void drainSheetSyncJobs().catch(() => {});
 }
 
 // ── Auth ────────────────────────────────────────────────────────────────────

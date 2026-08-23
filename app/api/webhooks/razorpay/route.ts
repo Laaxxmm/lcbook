@@ -1,4 +1,5 @@
 import { handleRazorpayWebhook } from "@/lib/webhook";
+import { drainSheetSyncJobs } from "@/lib/sheet-sync";
 
 // Thin wrapper (§9). Read the RAW body + signature + event-id headers, hand them to the
 // frozen handler, return its status fast. All side-effects (PDF, email, sheet sync) are
@@ -12,5 +13,7 @@ export async function POST(req: Request): Promise<Response> {
   const signature = req.headers.get("x-razorpay-signature") ?? "";
   const eventId = req.headers.get("x-razorpay-event-id") ?? "";
   const result = await handleRazorpayWebhook(rawBody, signature, eventId);
+  // Push the sheet update the handler enqueued (e.g. on auto-confirm) — non-blocking (§10).
+  void drainSheetSyncJobs().catch(() => {});
   return new Response(result.note, { status: result.status });
 }

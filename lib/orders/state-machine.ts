@@ -46,6 +46,7 @@ export async function transitionOrder(
     }
 
     const data: Prisma.OrderUpdateInput = { status: toStatus };
+    const sheetExtra: Record<string, unknown> = {}; // extra Orders-tab fields for this transition
 
     switch (toStatus) {
       case OrderStatus.PAYMENT_PENDING:
@@ -67,19 +68,20 @@ export async function transitionOrder(
         data.fulfilmentType = fulfilmentType;
         data.invoiceNumber = invoiceNumber;
         data.discountCode = `LC${order.seq}-COURSE`; // 10% off, redeemed on WiseApp (§11)
-        await enqueueSheetSync(tx, order.id, "Orders", {
-          order_id: order.id,
-          status: OrderStatus.CONFIRMED,
-          fulfilment_type: fulfilmentType,
-          invoice_number: invoiceNumber,
-        });
+        sheetExtra.fulfilment_type = fulfilmentType;
+        sheetExtra.invoice_number = invoiceNumber;
         break;
       }
-      case OrderStatus.SHIPPED:
-        data.awb = metaString(meta, "awb") ?? null;
-        data.courier = metaString(meta, "courier") ?? null;
+      case OrderStatus.SHIPPED: {
+        const awb = metaString(meta, "awb") ?? null;
+        const courier = metaString(meta, "courier") ?? null;
+        data.awb = awb;
+        data.courier = courier;
         data.dispatchedAt = new Date();
+        sheetExtra.awb = awb ?? "";
+        sheetExtra.courier = courier ?? "";
         break;
+      }
       case OrderStatus.DELIVERED:
         data.deliveredAt = new Date();
         break;
@@ -101,6 +103,19 @@ export async function transitionOrder(
     if (hook) Object.assign(data, await hook(tx, order));
 
     const updated = await tx.order.update({ where: { id: orderId }, data });
+
+    // Mirror status changes from CONFIRMED onward to the Orders tab (§10). Partial upsert by
+    // order_id; the POST happens later via the sheet-sync worker (drained after the admin action /
+    // by the webhook). Skip pre-payment churn so abandoned carts don't clutter the sheet.
+    const skipSheet: OrderStatus[] = [
+      OrderStatus.CREATED,
+      OrderStatus.PAYMENT_PENDING,
+      OrderStatus.PAID,
+      OrderStatus.PAYMENT_FAILED,
+    ];
+    if (!skipSheet.includes(toStatus)) {
+      await enqueueSheetSync(tx, order.id, "Orders", { order_id: order.id, status: toStatus, ...sheetExtra });
+    }
 
     // Append-only event, same transaction (§5, §6).
     await tx.orderEvent.create({
