@@ -5,6 +5,8 @@ import { formatRupees, computeRefund } from "@/lib/money";
 import { PageHeader, Card, KV } from "@/components/admin/ui";
 import { StatusBadge, statusLabel } from "@/components/admin/status-badge";
 import { TransitionControls } from "@/components/admin/transitions";
+import { ActionButton } from "@/components/admin/action-button";
+import { clearOrderFlags } from "@/app/admin/(panel)/actions";
 import { Button } from "@/components/ui/button";
 
 // Order detail (§14): full snapshot + the append-only OrderEvent timeline + legal-transition
@@ -47,6 +49,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <ul className="mt-1 list-disc pl-5 text-[14px] text-red-700">
             {flags.map((f) => <li key={f}>{f}</li>)}
           </ul>
+          {order.amountMismatchFlagged && (
+            <div className="mt-3">
+              <ActionButton
+                action={clearOrderFlags}
+                hidden={{ orderId: order.id }}
+                variant="outline"
+                size="sm"
+                confirm="Clear the amount-mismatch flag? Only after you've verified the payment in Razorpay."
+              >
+                Clear flag
+              </ActionButton>
+            </div>
+          )}
         </div>
       )}
 

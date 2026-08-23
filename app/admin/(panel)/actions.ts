@@ -107,6 +107,38 @@ export async function advanceOrder(_prev: ActionState, fd: FormData): Promise<Ac
   }
 }
 
+// Dismiss the amount-mismatch flag once an admin has reviewed it (§14). Audited via OrderEvent;
+// does NOT change status or money — the admin still advances the order via the normal transitions.
+export async function clearOrderFlags(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const g = await guard();
+  if (g) return g;
+
+  const orderId = str(fd, "orderId");
+  if (!orderId) return { error: "Bad request." };
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { id: orderId } });
+      if (!order) throw new Error("Order not found.");
+      if (!order.amountMismatchFlagged) return;
+      await tx.order.update({ where: { id: orderId }, data: { amountMismatchFlagged: false } });
+      await tx.orderEvent.create({
+        data: {
+          orderId,
+          fromStatus: order.status,
+          toStatus: order.status,
+          actor: Actor.ADMIN,
+          metadata: { kind: "FLAG_CLEARED", flag: "amountMismatch" } as Prisma.InputJsonValue,
+        },
+      });
+    });
+    revalidateOrder(orderId);
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 // ── Dispatch: AWB + courier → SHIPPED (§14). Locks cancellation at SHIPPED (§6). ──
 export async function dispatchOrder(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const g = await guard();

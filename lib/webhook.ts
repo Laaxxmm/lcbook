@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyWebhookSignature } from "@/lib/razorpay";
 import { transitionOrder } from "@/lib/orders/state-machine";
 import { sendPaymentConfirmedEmail } from "@/lib/notifications";
+import { GATEWAY_FEE_RATE } from "@/lib/money";
 
 export interface WebhookResult {
   status: number;
@@ -100,16 +101,25 @@ async function processEvent(event: string, entity: RzpEntity): Promise<WebhookRe
       const order = await prisma.order.findUnique({ where: { razorpayOrderId: rzpOrderId } });
       if (!order) return { status: 200, note: "unknown order" };
 
-      // Reconcile amount. Mismatch → flag for admin, do NOT auto-confirm.
-      if (typeof entity.amount === "number" && entity.amount !== order.amountPaise) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { amountMismatchFlagged: true },
-        });
-        return { status: 200, note: "amount mismatch flagged" };
+      // Reconcile amount. Fee Bearer = Customer: Razorpay adds its fee on top, so the captured
+      // amount is the order amount PLUS up to the gateway fee. Accept [order, order + fee + ε];
+      // underpayment or a larger overpayment is flagged as possible tampering — no auto-confirm.
+      if (typeof entity.amount === "number") {
+        const maxSurcharge = Math.ceil(order.amountPaise * GATEWAY_FEE_RATE) + 100; // +ε for rounding (paise)
+        const surcharge = entity.amount - order.amountPaise;
+        if (surcharge < 0 || surcharge > maxSurcharge) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { amountMismatchFlagged: true },
+          });
+          return { status: 200, note: "amount mismatch flagged" };
+        }
       }
 
-      await transitionOrder(order.id, OrderStatus.PAID, Actor.SYSTEM, { paymentId: entity.id });
+      await transitionOrder(order.id, OrderStatus.PAID, Actor.SYSTEM, {
+        paymentId: entity.id,
+        capturedPaise: entity.amount,
+      });
       const confirmed = await transitionOrder(order.id, OrderStatus.CONFIRMED, Actor.SYSTEM);
       await sendPaymentConfirmedEmail(confirmed); // exactly once per event (idempotency-guarded)
       return { status: 200, note: "confirmed" };
