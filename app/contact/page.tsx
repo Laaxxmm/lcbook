@@ -1,18 +1,26 @@
 import type { Metadata } from "next";
 import { SELLER } from "@/lib/invoice";
 import { LegalPage, H2, P } from "@/components/store/legal";
+import { JsonLd, organizationLd } from "@/app/_lib/seo";
 
-export const metadata: Metadata = { title: "Contact" };
+// Its own description — this page used to reuse the homepage's verbatim (P1-8).
+export const metadata: Metadata = {
+  title: "Contact",
+  description:
+    "Reach Learn Crew Publications in Bengaluru — email, phone or WhatsApp for order status, delivery questions and book-set enquiries. We answer every message.",
+  alternates: { canonical: "/contact" },
+};
 
 const WHATSAPP = "https://wa.me/919738255304";
 
 export default function ContactPage() {
   return (
     <LegalPage title="Contact us" updated="24 July 2026">
+      <JsonLd data={organizationLd()} />
       <P>We&apos;re a small team in Bengaluru and we answer every message.</P>
 
       <H2>{SELLER.displayName}</H2>
-      <P>{SELLER.address.join(", ")}</P>
+      <P>{SELLER.displayAddress}</P>
 
       <H2>Reach us</H2>
       <P>

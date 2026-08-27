@@ -7,6 +7,10 @@ import { GST_ENABLED } from "@/lib/money";
 export const SELLER = {
   name: "Learncrew Talent Pvt Ltd",
   displayName: "Learn Crew Publications",
+  // ONE canonical customer-facing address (NAP consistency — must match Google Business Profile
+  // and every directory listing). Use this everywhere on the site; `address` below stays the
+  // full postal form for the Bill of Supply / courier label.
+  displayAddress: "No. 57, Nandanam Layout, Nisarga Colony, 13th C Cross, 9th Cross, 10th Main Rd, Horamavu, Bengaluru 560043",
   address: [
     "No 57, Nandanam Layout, Nisarga Colony, 13th C Cross,",
     "9th Cross, 10th Main Rd, Horamavu, Bengaluru 560043",

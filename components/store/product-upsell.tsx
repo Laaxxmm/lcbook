@@ -1,7 +1,7 @@
 import type { Sku } from "@prisma/client";
 import { ArrowRight, BookText, ClipboardCheck, Play, type LucideIcon } from "lucide-react";
 import type { SkuCode } from "@/lib/catalogue";
-import { elearningUtm } from "@/config/elearning";
+import { withUtm } from "@/config/elearning";
 import {
   DIGITAL,
   effectiveEbookPaise,
@@ -63,8 +63,6 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
   const mockHref = effectiveMockUrl(sku);
   if (!d || (!ebookHref && !courseHref)) return null; // no ebook/course → no panel (mocks alone show on the storefront Mocks tab)
 
-  const utm = elearningUtm();
-
   return (
     <section className="mt-8" aria-labelledby="ebook">
       <h2 id="ebook" className="flex items-center gap-2 text-[15px] font-bold text-lc-green-800">
@@ -82,7 +80,7 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
             Icon={BookText}
             title={`${d.ebookLabel} — ${formatRupees(effectiveEbookPaise(sku))}`}
             note="1-year access. Opens on our learning platform."
-            href={ebookHref + utm}
+            href={withUtm(ebookHref)}
             cta="Get the eBook"
           />
         )}
@@ -91,7 +89,7 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
             Icon={ClipboardCheck}
             title={`${d.mockLabel} — ${formatRupees(effectiveMockPaise(sku))}`}
             note="1-year access. Opens on our learning platform."
-            href={mockHref + utm}
+            href={withUtm(mockHref)}
             cta="Get the mocks"
           />
         )}
@@ -100,7 +98,7 @@ export function ProductUpsell({ sku }: { sku: Sku }) {
             Icon={Play}
             title={`Recorded course — ${formatRupees(effectiveCoursePaise(sku))}`}
             note="Includes the eBook and mock tests. 1-year access."
-            href={courseHref + utm}
+            href={withUtm(courseHref)}
             cta="View the course"
           />
         ) : (

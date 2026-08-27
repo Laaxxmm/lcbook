@@ -1,15 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, MessageCircle, Truck, Check, Package } from "lucide-react";
+import {
+  MapPin,
+  MessageCircle,
+  Truck,
+  Check,
+  Package,
+  GraduationCap,
+  ArrowUpRight,
+} from "lucide-react";
 import { prisma } from "@/lib/db";
 import { availableStock } from "@/lib/inventory";
+import { SELLER } from "@/lib/invoice";
 import { Container } from "@/components/ui/container";
 import { Price } from "@/components/ui/price";
 import { StockBadge, stockStatus, CornerRibbon } from "@/components/ui/stock-badge";
 import { ProductUpsell } from "@/components/store/product-upsell";
 import { ProductPurchase } from "@/components/store/product-purchase";
 import { examBadge } from "@/app/_lib/sku-view";
+import { JsonLd, siteUrl } from "@/app/_lib/seo";
+import { CROSSLINKS } from "@/config/learncrew";
+import type { SkuCode } from "@/lib/catalogue";
 
 // POD (stock 0) allows a small bulk order; in-stock is capped at real availability. Both stay
 // within the checkout API's sanity ceiling. The frozen core still prevents oversell at CONFIRMED.
@@ -40,7 +52,16 @@ export async function generateMetadata({
     title: sku.name,
     description: `${sku.name} — ${sku.bookCount} books, ${price} with shipping included. Dispatched from Bengaluru.`,
     alternates: { canonical: `/${sku.code}` },
-    openGraph: { title: sku.name, description: `${sku.bookCount}-book set · ${price} shipping included.` },
+    // og:image comes from ./opengraph-image.tsx. siteName/url must be restated: a child's
+    // openGraph REPLACES the root layout's, it does not merge into it.
+    openGraph: {
+      type: "website",
+      siteName: "Learn Crew Publications",
+      url: `${siteUrl()}/${sku.code}`,
+      title: sku.name,
+      description: `${sku.bookCount}-book set · ${price} shipping included.`,
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -58,9 +79,80 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
     ? "Cancel any time before dispatch — refunded minus payment-gateway charges."
     : "Cancel until printing starts — refunded minus gateway charges; not cancellable once printing begins.";
 
+  // Structured data (P1-6). Availability, price and the delivery window are all read from the
+  // same live values the page renders — never a hardcoded "InStock". No aggregateRating/review:
+  // the store has none. Image points at ./opengraph-image, generated from this same Sku row.
+  const base = siteUrl();
+  const url = `${base}/${sku.code}`;
+  const productLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Product",
+        "@id": `${url}#product`,
+        name: sku.name,
+        description: `${sku.name} — ${sku.bookCount} printed books (${sku.titles.join(", ")}), A4 size. Sold as a set; shipping included, dispatched from Bengaluru.`,
+        sku: sku.code,
+        image: [`${url}/opengraph-image`],
+        brand: { "@type": "Brand", name: SELLER.displayName },
+        offers: {
+          "@type": "Offer",
+          url,
+          price: (sku.pricePaise / 100).toFixed(2),
+          priceCurrency: "INR",
+          itemCondition: "https://schema.org/NewCondition",
+          // Print-to-order is BackOrder, not InStock — the buyer waits 7–10 days for it.
+          availability: inStock
+            ? "https://schema.org/InStock"
+            : "https://schema.org/BackOrder",
+          seller: { "@type": "Organization", name: SELLER.displayName },
+          shippingDetails: {
+            "@type": "OfferShippingDetails",
+            shippingRate: { "@type": "MonetaryAmount", value: "0", currency: "INR" },
+            shippingDestination: { "@type": "DefinedRegion", addressCountry: "IN" },
+            deliveryTime: {
+              "@type": "ShippingDeliveryTime",
+              // Handling only. Courier transit varies by pincode and we don't measure it,
+              // so we don't claim it.
+              handlingTime: {
+                "@type": "QuantitativeValue",
+                minValue: inStock ? 1 : 7,
+                maxValue: inStock ? 2 : 10,
+                unitCode: "DAY",
+              },
+            },
+          },
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: base },
+          { "@type": "ListItem", position: 2, name: sku.name, item: url },
+        ],
+      },
+    ],
+  };
+
   return (
     <Container className="py-8 sm:py-12">
+      <JsonLd data={productLd} />
       <div className="mx-auto max-w-xl">
+        {/* Visible breadcrumb — mirrors the BreadcrumbList above; the two must agree. */}
+        <nav aria-label="Breadcrumb" className="mb-4 text-[12.5px] text-lc-green-400">
+          <ol className="flex flex-wrap items-center gap-1.5">
+            <li>
+              <Link href="/" className="transition-colors hover:text-lc-green-800 hover:underline underline-offset-4">
+                Home
+              </Link>
+            </li>
+            <li aria-hidden className="text-lc-green-400/50">/</li>
+            <li aria-current="page" className="font-semibold text-lc-green-700">
+              {sku.name}
+            </li>
+          </ol>
+        </nav>
+
         {/* Hero — relative + overflow-hidden so the in-stock corner ribbon clips at the corner. */}
         <div className="relative overflow-hidden">
           {showRibbon && <CornerRibbon />}
@@ -125,7 +217,10 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
         {/* 7. Ebook / course upsell — below the primary action, missing rows hidden */}
         <ProductUpsell sku={sku} />
 
-        {/* 8. Trust strip */}
+        {/* 8. Cross-link to the parent brand (P1-3) — the highest-intent link on the site. */}
+        <ExamHelp code={sku.code} />
+
+        {/* 9. Trust strip */}
         <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-lc-border pt-5 text-[13px] text-lc-green-400">
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="h-4 w-4 shrink-0 text-lc-green-700" aria-hidden />
@@ -150,5 +245,37 @@ export default async function ProductPage({ params }: { params: Promise<{ sku: s
         </div>
       </div>
     </Container>
+  );
+}
+
+/**
+ * "Preparing for X?" — the one contextual link back to learncrew.org, phrased as help rather
+ * than a second upsell (the digital panel above is the upsell). Same rule as the digital rows:
+ * a SKU with no CROSSLINKS entry renders NOTHING, so there is never a dead link. CLAT
+ * deliberately has no coaching link — that product doesn't exist.
+ */
+function ExamHelp({ code }: { code: string }) {
+  const x = CROSSLINKS[code as SkuCode];
+  if (!x) return null;
+  return (
+    <section className="mt-8 rounded-[12px] border border-lc-border bg-white p-5" aria-labelledby="exam-help">
+      <h2 id="exam-help" className="flex items-center gap-2 text-[15px] font-bold text-lc-green-800">
+        <GraduationCap className="h-4 w-4 shrink-0 text-lc-green-700" aria-hidden />
+        {x.heading}
+      </h2>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-lc-green-400">{x.blurb}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {x.links.map((l) => (
+          <a
+            key={l.href}
+            href={l.href}
+            className="inline-flex items-center gap-1.5 rounded-full border border-lc-border bg-lc-cream px-3.5 py-2 text-[13px] font-bold text-lc-green-800 transition-colors hover:border-lc-gold hover:bg-lc-gold hover:text-lc-on-gold"
+          >
+            {l.label}
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }

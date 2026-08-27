@@ -1,11 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { Sku } from "@prisma/client";
 import { ArrowRight, BookOpen, BookText, ClipboardCheck, Package } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { JsonLd, organizationLd, siteUrl } from "@/app/_lib/seo";
 import { Price } from "@/components/ui/price";
 import { Container } from "@/components/ui/container";
 import { stockStatus, stockTone, CornerRibbon } from "@/components/ui/stock-badge";
-import { examBadge } from "@/app/_lib/sku-view";
+import {
+  examBadge,
+  groupByUrl,
+  groupBadge,
+  groupTitle,
+  groupPrice,
+} from "@/app/_lib/sku-view";
 import {
   DIGITAL,
   effectiveEbookPaise,
@@ -13,7 +21,7 @@ import {
   effectiveMockPaise,
   effectiveMockUrl,
 } from "@/app/_lib/digital";
-import { elearningUtm } from "@/config/elearning";
+import { withUtm } from "@/config/elearning";
 import type { SkuCode } from "@/lib/catalogue";
 
 // Catalogue home (§15). SSR so live prices/availability show and this indexed URL keeps its
@@ -30,17 +38,78 @@ const TABS = [
   { key: "mocks", label: "Mocks", href: "/?tab=mocks", Icon: ClipboardCheck },
 ] as const;
 
+type TabKey = (typeof TABS)[number]["key"];
+
+function activeTab(tab?: string): TabKey {
+  return tab === "ebook" ? "ebook" : tab === "mocks" ? "mocks" : "hardcopy";
+}
+
+// Distinct title/description AND a self-canonical per tab (P1-4). "/", "/?tab=ebook" and
+// "/?tab=mocks" are three near-duplicate documents; with no canonical Google picks one and
+// drops the other two, so the eBook and Mocks catalogues were invisible. `heading` is the
+// same string rendered as the grid's H2 — the page had an H1 and then no H2 at all (P1-7).
+const TAB_META: Record<
+  TabKey,
+  { title: string; description: string; canonical: string; heading: string }
+> = {
+  hardcopy: {
+    title: "Entrance-exam book sets",
+    description:
+      "Physical book sets for PGCET, MAT, CAT and CLAT entrance prep. One price, shipping included, dispatched from Bengaluru.",
+    canonical: "/",
+    heading: "Hardcopy sets",
+  },
+  ebook: {
+    title: "eBooks & recorded courses",
+    description:
+      "Digital editions of the PGCET, CAT and CLAT book sets plus recorded courses — 1-year access on the Learn Crew learning platform. Non-refundable.",
+    canonical: "/?tab=ebook",
+    heading: "eBooks & recorded courses",
+  },
+  mocks: {
+    title: "Mock test series",
+    description:
+      "Full-length mock test series for PGCET, MAT, CAT and CLAT — 1-year access on the Learn Crew learning platform. Non-refundable.",
+    canonical: "/?tab=mocks",
+    heading: "Mock test series",
+  },
+};
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}): Promise<Metadata> {
+  const { tab } = await searchParams;
+  const m = TAB_META[activeTab(tab)];
+  return {
+    title: m.title,
+    description: m.description,
+    alternates: { canonical: m.canonical },
+    // openGraph REPLACES the root layout's rather than merging, so siteName/type are restated.
+    openGraph: {
+      type: "website",
+      siteName: "Learn Crew Publications",
+      url: `${siteUrl()}${m.canonical}`,
+      title: m.title,
+      description: m.description,
+    },
+    twitter: { card: "summary_large_image" },
+  };
+}
+
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab } = await searchParams;
-  const active = tab === "ebook" ? "ebook" : tab === "mocks" ? "mocks" : "hardcopy";
+  const active = activeTab(tab);
   const skus = await prisma.sku.findMany({ where: { active: true }, orderBy: { pricePaise: "asc" } });
 
   return (
     <Container className="py-10 sm:py-14">
+      <JsonLd data={organizationLd()} />
       <header className="max-w-2xl">
         <p className="text-sm font-semibold uppercase tracking-wide text-lc-green-400">
           Learn Crew Publications
@@ -76,6 +145,11 @@ export default async function Home({
         })}
       </div>
 
+      {/* Each grid gets a real H2 — the page used to jump straight from the H1 to the cards. */}
+      <h2 className="mt-10 text-xl font-bold tracking-tight text-lc-green-800 sm:text-2xl">
+        {TAB_META[active].heading}
+      </h2>
+
       {active === "hardcopy" ? (
         <HardcopyGrid skus={skus} />
       ) : active === "ebook" ? (
@@ -98,11 +172,24 @@ function CardHairline() {
   );
 }
 
-function ExamChip({ code }: { code: string }) {
+function ExamChip({ label }: { label: string }) {
   return (
     <span className="inline-flex w-fit rounded-full bg-[rgba(14,59,46,0.06)] px-3 py-1 text-[12px] font-bold text-lc-green-700">
-      {examBadge(code)}
+      {label}
     </span>
+  );
+}
+
+/** Price block for a grouped digital card. */
+function GroupPrice({ paise, from, note }: { paise: number; from: boolean; note: string }) {
+  return (
+    <div className="min-w-0">
+      {from && (
+        <span className="text-[12px] font-bold uppercase tracking-wide text-lc-green-400">from</span>
+      )}
+      <Price paise={paise} shippingIncluded={false} />
+      <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">{note}</p>
+    </div>
   );
 }
 
@@ -137,7 +224,7 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
             <CardHairline />
             {showRibbon && <CornerRibbon />}
             <div className="flex items-start justify-between gap-2">
-              <ExamChip code={sku.code} />
+              <ExamChip label={examBadge(sku.code)} />
               {/* Edge pill — copy driven only by real stockQty. Hidden when the ribbon shows. */}
               {!showRibbon && (
                 <span
@@ -148,7 +235,7 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
                 </span>
               )}
             </div>
-            <h2 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h2>
+            <h3 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h3>
             <p className="mt-1 flex items-start gap-1.5 text-[13px] text-lc-green-400">
               <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>
@@ -172,11 +259,8 @@ function HardcopyGrid({ skus }: { skus: Sku[] }) {
 
 function EbookGrid({ skus }: { skus: Sku[] }) {
   // §3: display + redirect only, and a MISSING URL hides that item entirely (no dead links,
-  // no price with no destination). Only SKUs with an effective eBook URL appear here.
-  const items = skus
-    .map((s) => ({ sku: s, href: effectiveEbookUrl(s) }))
-    .filter((x): x is { sku: Sku; href: string } => Boolean(x.href));
-  const utm = elearningUtm();
+  // no price with no destination). SKUs sharing one eBook URL collapse into a single card.
+  const items = groupByUrl(skus, effectiveEbookUrl);
 
   if (items.length === 0) {
     return (
@@ -193,31 +277,31 @@ function EbookGrid({ skus }: { skus: Sku[] }) {
         <strong>non-refundable</strong>, and a Hardcopy set doesn&apos;t include digital access.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map(({ sku, href }) => {
-          const d = DIGITAL[sku.code as SkuCode];
+        {items.map(({ skus: group, href }) => {
+          const d = DIGITAL[group[0].code as SkuCode];
+          const price = groupPrice(group, effectiveEbookPaise);
           return (
             <a
-              key={sku.code}
-              href={href + utm}
+              key={href}
+              href={withUtm(href)}
               target="_blank"
               rel="noopener noreferrer"
               className={CARD_CLASS}
             >
               <CardHairline />
               <div className="flex items-start justify-between gap-2">
-                <ExamChip code={sku.code} />
+                <ExamChip label={groupBadge(group)} />
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[rgba(232,163,61,0.16)] px-2.5 py-1 text-[11.5px] font-bold text-lc-green-800">
                   <BookText className="h-3 w-3 shrink-0" aria-hidden />
                   eBook
                 </span>
               </div>
-              <h2 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h2>
+              <h3 className="mt-3 text-lg font-bold text-lc-green-800">
+                {groupTitle(group, "eBook")}
+              </h3>
               <p className="mt-1 text-[13px] text-lc-green-400">{d.ebookLabel}</p>
               <div className="mt-4 flex items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <Price paise={effectiveEbookPaise(sku)} shippingIncluded={false} />
-                  <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">1-year access</p>
-                </div>
+                <GroupPrice paise={price.paise} from={price.from} note="1-year access" />
                 <CtaPill label="Get eBook" />
               </div>
             </a>
@@ -230,11 +314,9 @@ function EbookGrid({ skus }: { skus: Sku[] }) {
 
 function MocksGrid({ skus }: { skus: Sku[] }) {
   // §3: display + redirect only, and a MISSING URL hides that item entirely (no dead links,
-  // no price with no destination). Only SKUs with an effective mock URL appear here.
-  const items = skus
-    .map((s) => ({ sku: s, href: effectiveMockUrl(s) }))
-    .filter((x): x is { sku: Sku; href: string } => Boolean(x.href));
-  const utm = elearningUtm();
+  // no price with no destination). PGCET MBA + MCA share one mock series, so one URL = one
+  // card — the tab used to list the same ₹399 series twice (P0-2).
+  const items = groupByUrl(skus, effectiveMockUrl);
 
   if (items.length === 0) {
     return (
@@ -251,31 +333,31 @@ function MocksGrid({ skus }: { skus: Sku[] }) {
         <strong>non-refundable</strong>, and a Hardcopy set doesn&apos;t include digital access.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map(({ sku, href }) => {
-          const d = DIGITAL[sku.code as SkuCode];
+        {items.map(({ skus: group, href }) => {
+          const d = DIGITAL[group[0].code as SkuCode];
+          const price = groupPrice(group, effectiveMockPaise);
           return (
             <a
-              key={sku.code}
-              href={href + utm}
+              key={href}
+              href={withUtm(href)}
               target="_blank"
               rel="noopener noreferrer"
               className={CARD_CLASS}
             >
               <CardHairline />
               <div className="flex items-start justify-between gap-2">
-                <ExamChip code={sku.code} />
+                <ExamChip label={groupBadge(group)} />
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[rgba(232,163,61,0.16)] px-2.5 py-1 text-[11.5px] font-bold text-lc-green-800">
                   <ClipboardCheck className="h-3 w-3 shrink-0" aria-hidden />
                   Mocks
                 </span>
               </div>
-              <h2 className="mt-3 text-lg font-bold text-lc-green-800">{sku.name}</h2>
+              <h3 className="mt-3 text-lg font-bold text-lc-green-800">
+                {groupTitle(group, "Mock tests")}
+              </h3>
               <p className="mt-1 text-[13px] text-lc-green-400">{d.mockLabel}</p>
               <div className="mt-4 flex items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <Price paise={effectiveMockPaise(sku)} shippingIncluded={false} />
-                  <p className="mt-0.5 text-[12px] font-medium text-lc-green-400">1-year access</p>
-                </div>
+                <GroupPrice paise={price.paise} from={price.from} note="1-year access" />
                 <CtaPill label="Get mocks" />
               </div>
             </a>

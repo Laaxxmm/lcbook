@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { SELLER } from "@/lib/invoice";
 import { LegalPage, H2, P, UL } from "@/components/store/legal";
 
-export const metadata: Metadata = { title: "Shipping Policy" };
+export const metadata: Metadata = {
+  title: "Shipping Policy",
+  description:
+    "Shipping is included in every Learn Crew Publications price — dispatch windows for in-stock and print-to-order sets, courier tracking, and what happens if a parcel arrives damaged.",
+  alternates: { canonical: "/shipping-policy" },
+};
 
 export default function ShippingPolicyPage() {
   return (
@@ -37,7 +42,7 @@ export default function ShippingPolicyPage() {
       </P>
 
       <P>
-        Dispatched from: {SELLER.address.join(" ")}. Questions?{" "}
+        Dispatched from: {SELLER.displayAddress}. Questions?{" "}
         <a href={`mailto:${SELLER.email}`} className="font-semibold text-lc-green-700 underline underline-offset-4">{SELLER.email}</a>{" "}
         · {SELLER.phone}.
       </P>

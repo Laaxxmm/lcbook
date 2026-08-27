@@ -29,7 +29,19 @@ export const COURSE_URL: Partial<Record<SkuCode, string>> = {
 // the digital price resolvers — one coherent place for every "effective" digital value (§3).
 
 // Append to any outbound e-learning URL. Include the order id where one exists.
+// NOTE: use withUtm(url) — this returns the raw query string and does NOT know whether the
+// target URL already has a "?" (admin-entered links often do, e.g. ...?isStore=true).
 export function elearningUtm(orderId?: string): string {
   const base = "?ref=publications&utm_source=publications&utm_medium=referral";
   return orderId ? `${base}&order=${encodeURIComponent(orderId)}` : base;
+}
+
+/**
+ * Append the referral/UTM params to an outbound e-learning URL, using "&" when the URL already
+ * carries a query string. Concatenating elearningUtm() blindly produced `...?isStore=true?ref=…`,
+ * which parsers read as one value — silently destroying attribution.
+ */
+export function withUtm(url: string, orderId?: string): string {
+  const params = elearningUtm(orderId).slice(1); // drop the leading "?"
+  return `${url}${url.includes("?") ? "&" : "?"}${params}`;
 }

@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { SELLER } from "@/lib/invoice";
 import { LegalPage, H2, P, UL } from "@/components/store/legal";
 
-export const metadata: Metadata = { title: "Refund & Cancellation Policy" };
+export const metadata: Metadata = {
+  title: "Refund & Cancellation Policy",
+  description:
+    "How cancellations and refunds work at Learn Crew Publications — cancel before dispatch, refunds minus payment-gateway charges, and why print-to-order sets close earlier.",
+  alternates: { canonical: "/refund-policy" },
+};
 
 export default function RefundPolicyPage() {
   return (

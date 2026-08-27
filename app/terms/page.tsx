@@ -3,13 +3,19 @@ import Link from "next/link";
 import { SELLER } from "@/lib/invoice";
 import { LegalPage, H2, P, UL } from "@/components/store/legal";
 
-export const metadata: Metadata = { title: "Terms & Conditions" };
+// Its own description — this page used to reuse the homepage's verbatim (P1-8).
+export const metadata: Metadata = {
+  title: "Terms & Conditions",
+  description:
+    "The terms you agree to when you buy a printed book set from Learn Crew Publications — what we sell, pricing and taxes, dispatch, cancellation and limits of liability.",
+  alternates: { canonical: "/terms" },
+};
 
 export default function TermsPage() {
   return (
     <LegalPage title="Terms & Conditions" updated="24 July 2026">
       <P>
-        This store is operated by {SELLER.displayName}, {SELLER.address.join(" ")}. By placing an order you
+        This store is operated by {SELLER.displayName}, {SELLER.displayAddress}. By placing an order you
         agree to these terms. Questions? Write to{" "}
         <a href={`mailto:${SELLER.email}`} className="font-semibold text-lc-green-700 underline underline-offset-4">{SELLER.email}</a>{" "}
         or call {SELLER.phone}.
