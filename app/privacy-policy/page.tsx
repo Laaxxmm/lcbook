@@ -54,6 +54,7 @@ export default function PrivacyPolicyPage() {
         <li>Our courier partner — name, address and phone, printed on the shipping label so the parcel reaches you.</li>
         <li>Resend — sends your order emails (confirmation, dispatch, refund, sign-in links).</li>
         <li>Google (Sheets/Apps Script) — an internal, private mirror of order records used by our team for fulfilment.</li>
+        <li>Google Analytics — anonymous usage measurement (pages viewed, device, approximate location). It never receives your name, address, phone or payment details.</li>
         <li>Our hosting and database provider — stores the order records that run this store.</li>
       </UL>
       <P>
@@ -102,11 +103,20 @@ export default function PrivacyPolicyPage() {
         If you are under 18, please have a parent or guardian place the order.
       </P>
 
-      <H2>Cookies</H2>
+      <H2>Cookies and analytics</H2>
       <P>
-        We use only what the store needs to work — a session cookie once you sign in to track an
-        order, and the checkout security cookies Razorpay sets. No advertising or cross-site
-        tracking cookies are set by us.
+        We use what the store needs to work — a session cookie once you sign in to track an order,
+        and the checkout security cookies Razorpay sets. We also run Google Analytics, loaded through
+        Google Tag Manager, to understand how the store is used. It sets its own cookies and records
+        visit data such as the pages you view, an approximate location and your device type. The same
+        measurement runs on learncrew.org, so a visit that starts there and ends here is counted once
+        rather than twice.
+      </P>
+      <P>
+        This is measurement only. We do not run advertising cookies, we do not build advertising
+        profiles, and we never sell or share your data for someone else&apos;s advertising. You can
+        block analytics cookies in your browser settings or with an ad-blocker — the store, checkout
+        and order tracking all work normally without them.
       </P>
 
       <H2>Digital products</H2>
