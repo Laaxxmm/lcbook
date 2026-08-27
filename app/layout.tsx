@@ -9,6 +9,7 @@ import { SELLER } from "@/lib/invoice";
 import { Container } from "@/components/ui/container";
 import { BrandLogo } from "@/components/store/brand-logo";
 import { WhatsAppFab } from "@/components/store/whatsapp-fab";
+import { GoogleTagManager } from "@/components/analytics/google-tag-manager";
 import {
   HEADER_LINKS,
   FOOTER_PROGRAMS,
@@ -231,6 +232,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         {/* Floating WhatsApp button — global, above the mobile sticky buy bar. */}
         <WhatsAppFab />
+
+        {/* Shared GTM container — same one learncrew.org runs, so the store's
+            sessions land in the same GA4 property as the blog and the tools. */}
+        <GoogleTagManager />
       </body>
     </html>
   );
