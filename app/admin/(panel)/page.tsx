@@ -2,26 +2,11 @@ import Link from "next/link";
 import { OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatRupees } from "@/lib/money";
-import { CANCELLABLE_STATUSES } from "@/lib/orders/status";
+import { CANCELLABLE_STATUSES, PAID_STATUSES } from "@/lib/orders/status";
 import { SHIPPING_RATE_PER_KG_PAISE } from "@/config/pricing";
 import { PageHeader, Card } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/admin/status-badge";
 
-// Statuses where payment has been collected (money in) — whether confirmed by the Razorpay
-// webhook or advanced manually by an admin. Excludes pending/failed/cancelled/refunded.
-const PAID_STATUSES: OrderStatus[] = [
-  OrderStatus.PAID,
-  OrderStatus.CONFIRMED,
-  OrderStatus.PICKING,
-  OrderStatus.PACKED,
-  OrderStatus.SHIPPED,
-  OrderStatus.DELIVERED,
-  OrderStatus.PRINT_QUEUED,
-  OrderStatus.PRINT_STARTED,
-  OrderStatus.PRINT_DONE,
-  OrderStatus.RTO,
-  OrderStatus.DAMAGE_REPLACEMENT,
-];
 
 // Admin dashboard (§14): the things that need a human — flags, cancellations, print queue,
 // failed sheet syncs — plus a recent-orders glance.

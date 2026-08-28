@@ -74,3 +74,24 @@ export class InvalidTransitionError extends Error {
     this.name = "InvalidTransitionError";
   }
 }
+
+// Statuses in which payment has been collected — whether confirmed by the Razorpay webhook or
+// advanced manually by an admin. Excludes pending/failed/cancelled/refunded. Used by the
+// dashboard revenue KPIs and by the purchase-conversion gate on /pay.
+export const PAID_STATUSES: OrderStatus[] = [
+  OrderStatus.PAID,
+  OrderStatus.CONFIRMED,
+  OrderStatus.PICKING,
+  OrderStatus.PACKED,
+  OrderStatus.SHIPPED,
+  OrderStatus.DELIVERED,
+  OrderStatus.PRINT_QUEUED,
+  OrderStatus.PRINT_STARTED,
+  OrderStatus.PRINT_DONE,
+  OrderStatus.RTO,
+  OrderStatus.DAMAGE_REPLACEMENT,
+];
+
+export function isPaid(status: OrderStatus): boolean {
+  return PAID_STATUSES.includes(status);
+}

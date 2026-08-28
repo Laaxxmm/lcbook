@@ -10,6 +10,7 @@ import { Container } from "@/components/ui/container";
 import { BrandLogo } from "@/components/store/brand-logo";
 import { WhatsAppFab } from "@/components/store/whatsapp-fab";
 import { GoogleTagManager } from "@/components/analytics/google-tag-manager";
+import { GoogleAds } from "@/components/analytics/google-ads";
 import {
   HEADER_LINKS,
   FOOTER_PROGRAMS,
@@ -236,6 +237,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Shared GTM container — same one learncrew.org runs, so the store's
             sessions land in the same GA4 property as the blog and the tools. */}
         <GoogleTagManager />
+
+        {/* Google Ads base tag — purchase conversions fire from /pay. */}
+        <GoogleAds />
       </body>
     </html>
   );
