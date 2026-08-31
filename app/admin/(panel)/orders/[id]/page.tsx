@@ -6,7 +6,7 @@ import { PageHeader, Card, KV } from "@/components/admin/ui";
 import { StatusBadge, statusLabel } from "@/components/admin/status-badge";
 import { TransitionControls } from "@/components/admin/transitions";
 import { ActionButton } from "@/components/admin/action-button";
-import { clearOrderFlags } from "@/app/admin/(panel)/actions";
+import { clearOrderFlags, resendConfirmationEmail } from "@/app/admin/(panel)/actions";
 import { Button } from "@/components/ui/button";
 
 // Order detail (§14): full snapshot + the append-only OrderEvent timeline + legal-transition
@@ -86,10 +86,21 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </Button>
             </div>
           )}
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm">
               <Link href={`/admin/orders/${order.id}/label`}>Print shipping label</Link>
             </Button>
+            {order.invoiceNumber && (
+            <ActionButton
+              action={resendConfirmationEmail}
+              hidden={{ orderId: order.id }}
+              variant="outline"
+              size="sm"
+              confirm={`Re-send the confirmation email and Bill of Supply to ${order.customerEmail}?`}
+            >
+              Resend confirmation
+            </ActionButton>
+          )}
           </div>
         </Card>
 

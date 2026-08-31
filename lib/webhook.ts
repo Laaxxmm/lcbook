@@ -2,7 +2,7 @@ import { Prisma, Actor, OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { verifyWebhookSignature } from "@/lib/razorpay";
 import { transitionOrder } from "@/lib/orders/state-machine";
-import { sendPaymentConfirmedEmail } from "@/lib/notifications";
+import { sendPaymentConfirmedEmail, sendRefundCompletedEmail } from "@/lib/notifications";
 import { GATEWAY_FEE_RATE } from "@/lib/money";
 
 export interface WebhookResult {
@@ -140,7 +140,9 @@ async function processEvent(event: string, entity: RzpEntity): Promise<WebhookRe
       if (!refundId) return { status: 200, note: "no refund id" };
       const order = await prisma.order.findUnique({ where: { refundId } });
       if (order && order.status === OrderStatus.REFUND_INITIATED) {
-        await transitionOrder(order.id, OrderStatus.REFUNDED, Actor.SYSTEM);
+        const refunded = await transitionOrder(order.id, OrderStatus.REFUNDED, Actor.SYSTEM);
+        // Template 7 (§11). Without this the customer is never told the money actually landed.
+        await sendRefundCompletedEmail(refunded);
       }
       return { status: 200, note: "refund processed" };
     }

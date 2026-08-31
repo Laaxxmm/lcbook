@@ -28,3 +28,7 @@ export async function sendDispatchedEmail(order: Order): Promise<void> {
 export async function sendRefundInitiatedEmail(order: Order): Promise<void> {
   enqueueJob(`email:refund-initiated:${order.id}`, () => email.sendRefundInitiated(order));
 }
+
+export async function sendRefundCompletedEmail(order: Order): Promise<void> {
+  enqueueJob(`email:refund-completed:${order.id}`, () => email.sendRefundCompleted(order));
+}

@@ -17,6 +17,7 @@ import { runSheetSyncJob, drainSheetSyncJobs } from "@/lib/sheet-sync";
 import { enqueueJob } from "@/lib/jobs";
 import * as email from "@/lib/email";
 import {
+  sendPaymentConfirmedEmail,
   sendPrintStartedEmail,
   sendDispatchedEmail,
   sendRefundInitiatedEmail,
@@ -100,6 +101,10 @@ export async function advanceOrder(_prev: ActionState, fd: FormData): Promise<Ac
     const order = await transitionOrder(orderId, toStatus, Actor.ADMIN);
     // Side-effect emails (§6, §11). PRINT_STARTED fires the cancellation-window-closed notice.
     if (toStatus === OrderStatus.PRINT_STARTED) await sendPrintStartedEmail(order);
+    // A manual PAID -> CONFIRMED (used whenever the webhook flagged the order instead of
+    // confirming it) must still send the confirmation + Bill of Supply. Previously only the
+    // webhook sent it, so admin-confirmed buyers silently received nothing.
+    else if (toStatus === OrderStatus.CONFIRMED) await sendPaymentConfirmedEmail(order);
     else if (toStatus === OrderStatus.DELIVERED)
       enqueueJob(`email:delivered:${order.id}`, () => email.sendDelivered(order));
     revalidateOrder(orderId);
@@ -136,6 +141,28 @@ export async function clearOrderFlags(_prev: ActionState, fd: FormData): Promise
     });
     revalidateOrder(orderId);
     return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// Re-send the confirmation + Bill of Supply for an already-paid order (§11 template 1).
+// Needed because the email is a side-effect of the CONFIRMED transition, and an order can only
+// be confirmed once — so if that send failed, or the order was confirmed before the manual-confirm
+// path sent anything, there was no way to get the buyer their invoice.
+export async function resendConfirmationEmail(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const g = await guard();
+  if (g) return g;
+
+  const orderId = str(fd, "orderId");
+  if (!orderId) return { error: "Bad request." };
+
+  try {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return { error: "Order not found." };
+    if (!order.invoiceNumber) return { error: "No invoice yet — confirm the order first." };
+    await sendPaymentConfirmedEmail(order);
+    return { ok: true, msg: `Confirmation re-sent to ${order.customerEmail}.` };
   } catch (err) {
     return fail(err);
   }
